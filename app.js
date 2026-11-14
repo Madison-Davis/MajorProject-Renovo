@@ -189,7 +189,7 @@ function switchView(viewName) {
   $$(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === viewName));
   $$(".view").forEach((view) => view.classList.toggle("active", view.id === `view-${viewName}`));
   $("#topbar-section").textContent = viewName.toUpperCase();
-  if (viewName === "voyage") {
+  if (viewName === "roam") {
     renderEvents();
     initializeLeafletMap();
     requestAnimationFrame(() => {
@@ -198,7 +198,7 @@ function switchView(viewName) {
       renderMapPins(regionEvents());
     });
   }
-  if (viewName === "vitality") renderFitness();
+  if (viewName === "renew") renderFitness();
 }
 
 function renderFitness() {
