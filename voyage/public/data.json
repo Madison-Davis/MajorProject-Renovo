@@ -1,0 +1,19 @@
+{
+  "data": [
+    {
+      "name": "Voyage",
+      "version": "1.0.0",
+      "description": "A sample JSON data file for the Voyage project.",
+      "author": "Your Name",
+      "license": "MIT"
+    },
+    {
+      "name": "Voyage",
+      "version": "1.0.1",
+      "description": "Updated JSON data file with additional information.",
+      "author": "Your Name",
+      "license": "MIT"
+    }
+  ],
+  "places": []
+}

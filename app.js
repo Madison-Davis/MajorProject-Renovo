@@ -76,8 +76,31 @@ function normalizeEvent(event) {
   const center = MAP_REGIONS[region].center;
   return { ...event, region, lat: Number(event.lat) || center[0], lng: Number(event.lng) || center[1] };
 }
-function persistEvents() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(events.filter((event) => !event.seed)));
+async function persistEvents(places) {
+  const response = await fetch('/api/voyage/places', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ places }),
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!response.ok) throw new Error('Could not save places to voyage/public/data.json. Make sure the local server is running.');
+  return (await response.json()).places;
+}
+async function loadVoyagePlaces() {
+  try {
+    const response = await fetch('/api/voyage/places', { cache: 'no-store', signal: AbortSignal.timeout(10000) });
+    if (!response.ok) throw new Error('Voyage server unavailable');
+    let places = (await response.json()).places;
+    const legacy = events.filter((place) => !place.seed);
+    if (legacy.length) places = await persistEvents(legacy);
+    events = [...seedEvents, ...places.map(normalizeEvent)];
+    localStorage.removeItem(STORAGE_KEY);
+    $('#voyage-save-status').textContent = 'Places saved on this Mac';
+    renderEvents();
+  } catch (error) {
+    $('#voyage-save-status').textContent = 'File storage offline. Start python3 server.py and reload. Browser-saved places remain available.';
+    console.warn('Could not load Voyage file storage.', error);
+  }
 }
 function loadWorkoutLogs() {
   try {
@@ -358,6 +381,7 @@ function setMonthOffset(value) {
   renderEvents();
 }
 function initEvents() {
+  $$('[data-close-event]').forEach((button) => button.addEventListener('click', () => $('#event-dialog').close()));
   $$(".region-btn").forEach((button) => button.addEventListener("click", () => {
     activeRegion = button.dataset.region;
     $$(".region-btn").forEach((item) => item.classList.toggle("active", item === button));
@@ -395,6 +419,7 @@ function initEvents() {
   $("#add-event-button").addEventListener("click", () => {
     const form = $("#event-form");
     form.reset();
+    $("#voyage-save-error").textContent = "";
     form.elements.date.value = localDateKey(new Date());
     form.elements.region.value = activeRegion;
     const coordinates = pendingCoordinates?.region === activeRegion ? pendingCoordinates : { region: activeRegion, lat: MAP_REGIONS[activeRegion].center[0], lng: MAP_REGIONS[activeRegion].center[1] };
@@ -407,12 +432,13 @@ function initEvents() {
     $("#event-form").elements.lat.value = center[0].toFixed(4);
     $("#event-form").elements.lng.value = center[1].toFixed(4);
   });
-  $("#event-form").addEventListener("submit", (event) => {
+  $("#event-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
+    if (form.querySelector('[type="submit"]').disabled) return;
     const value = new FormData(form);
     const newEvent = {
-      id: `saved-${Date.now()}`,
+      id: `saved-${crypto.randomUUID()}`,
       title: String(value.get("title")).trim(),
       category: String(value.get("category")),
       date: String(value.get("date")),
@@ -425,8 +451,19 @@ function initEvents() {
       links: String(value.get("links")).split(/\n|,/).map((item) => item.trim()).filter((item) => safeUrl(item)),
       seed: false,
     };
-    events.push(newEvent);
-    persistEvents();
+    const submit = form.querySelector('[type="submit"]');
+    submit.disabled = true;
+    try {
+      await voyageReady;
+      const places = await persistEvents([newEvent]);
+      events = [...seedEvents, ...places.map(normalizeEvent)];
+      $('#voyage-save-status').textContent = 'Place saved on this Mac';
+    } catch (error) {
+      $('#voyage-save-error').textContent = error.message || 'Could not save this place. Please retry.';
+      return;
+    } finally {
+      submit.disabled = false;
+    }
     activeRegion = newEvent.region;
     $$(".region-btn").forEach((button) => button.classList.toggle("active", button.dataset.region === activeRegion));
     if (leafletMap) leafletMap.setView(MAP_REGIONS[activeRegion].center, MAP_REGIONS[activeRegion].zoom);
@@ -455,3 +492,39 @@ updateClock();
 renderFitness();
 initEvents();
 renderEvents();
+
+// Read only the yearly goal lists through the local Obsidian bridge.
+let obsidianRequestPending = false;
+async function refreshObsidianGoals() {
+  if (obsidianRequestPending || document.hidden) return;
+  obsidianRequestPending = true;
+  const status = $('#obsidian-status');
+  try {
+    const response = await fetch('/api/obsidian/goals', { cache: 'no-store', signal: AbortSignal.timeout(4000) });
+    if (!response.ok) throw new Error('Obsidian bridge unavailable');
+    const data = await response.json();
+    if (!Array.isArray(data.sections)) throw new Error('Invalid goals response');
+    const sections = [...data.sections].sort((a, b) => b.year - a.year);
+    const section = sections.find((item) => item.year === new Date().getFullYear()) || sections[0];
+    const goals = section?.goals || [];
+    const done = goals.filter((goal) => goal.done).length;
+    $('#obsidian-year').textContent = section ? `YOUR ${section.year} INTENTIONS` : 'YOUR INTENTIONS';
+    $('#obsidian-count').innerHTML = `${done} <small>done</small>`;
+    $('#obsidian-goals').innerHTML = goals.length ? goals.map((goal) => `<div class="goal-row"><span class="check-mark">${goal.done ? '✓' : '○'}</span><span>${escapeHtml(goal.text)}</span><span class="goal-state">${goal.done ? 'DONE' : 'TO DO'}</span></div>`).join('') : '<p>No yearly goals found in your note.</p>';
+    $('#obsidian-summary').textContent = section ? `${done} of ${goals.length} goals complete for ${section.year}. Edits in Obsidian appear here automatically.` : 'Add a year heading such as “2026 Goals” followed by a goal list in your note.';
+    const link = `obsidian://open?vault=${encodeURIComponent(data.vault)}&file=${encodeURIComponent(data.source)}`;
+    $$('.note-card a, .goals-foot a').forEach((anchor) => { anchor.href = link; });
+    status.textContent = 'CONNECTED · REFRESHES EVERY 5S';
+    status.title = `Note updated ${new Date(data.modified * 1000).toLocaleString()}`;
+  } catch {
+    status.textContent = 'OFFLINE · LOCAL SERVER REQUIRED';
+    $('#obsidian-summary').textContent = 'Obsidian is disconnected. Run python3 server.py in the Voruva folder and open http://127.0.0.1:8000. Any goals still displayed are from the last successful refresh.';
+  } finally {
+    obsidianRequestPending = false;
+  }
+}
+refreshObsidianGoals();
+setInterval(refreshObsidianGoals, 5000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshObsidianGoals(); });
+
+const voyageReady = loadVoyagePlaces();
