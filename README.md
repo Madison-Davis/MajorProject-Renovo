@@ -1,4 +1,4 @@
-# Voruva
+# Renovo
 
 For saving Voyage places from the deployed GitHub Pages site, follow
 [voyage/SETUP.md](voyage/SETUP.md) to connect a Free Supabase database.

@@ -555,7 +555,7 @@ async function refreshObsidianGoals() {
     status.title = `Note updated ${new Date(data.modified * 1000).toLocaleString()}`;
   } catch {
     status.textContent = 'OFFLINE · LOCAL SERVER REQUIRED';
-    $('#obsidian-summary').textContent = 'Obsidian is disconnected. Run python3 server.py in the Voruva folder and open http://127.0.0.1:8000. Any goals still displayed are from the last successful refresh.';
+    $('#obsidian-summary').textContent = 'Obsidian is disconnected. Run python3 server.py in the Renovo folder and open http://127.0.0.1:8000. Any goals still displayed are from the last successful refresh.';
   } finally {
     obsidianRequestPending = false;
   }
