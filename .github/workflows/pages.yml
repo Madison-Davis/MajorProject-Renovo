@@ -19,13 +19,21 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Check out shared Compaulo styles
+        uses: actions/checkout@v4
+        with:
+          repository: Madison-Davis/MajorProject-Compaulo
+          ref: main
+          path: _theme-source
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
       - name: Prepare site directory
         run: |
           mkdir -p _site
-          cp index.html app.js styles.css compaulo-theme.css _site/
+          cp index.html app.js styles.css _site/
+          cp _theme-source/styles.css _site/compaulo-theme.css
 
       - name: Upload site files
         uses: actions/upload-pages-artifact@v3
