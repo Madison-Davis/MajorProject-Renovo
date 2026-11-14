@@ -22,14 +22,15 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
+      - name: Prepare site directory
+        run: |
+          mkdir -p _site
+          cp index.html app.js styles.css compaulo-theme.css _site/
+
       - name: Upload site files
         uses: actions/upload-pages-artifact@v3
         with:
-          path: |
-            index.html
-            app.js
-            styles.css
-            compaulo-theme.css
+          path: _site
 
   deploy:
     environment:
