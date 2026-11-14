@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#090909" />
+    <meta name="description" content="Madison's personal dashboard for life, vitality, and voyages." />
+    <title>Madison — Personal Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="compaulo-theme.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="dashboard-shell">
+      <aside class="dash-sidebar" aria-label="Main navigation">
+        <a class="dash-brand" href="#view" aria-label="Madison dashboard home">
+          <span class="brand-mark">M<span>.</span></span>
+          <span class="brand-copy"><strong>madison</strong><small>PERSONAL SPACE</small></span>
+        </a>
+        <div class="sidebar-label">WORKSPACE</div>
+        <nav class="side-nav">
+          <button class="nav-item active" data-view="view"><span class="nav-icon">◫</span><span>View</span><span class="nav-arrow">↗</span></button>
+          <button class="nav-item" data-view="voyage"><span class="nav-icon">⌖</span><span>Voyage</span><span class="nav-arrow">↗</span></button>
+          <button class="nav-item" data-view="vitality"><span class="nav-icon">⌁</span><span>Vitality</span><span class="nav-arrow">↗</span></button>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="sidebar-status"><span class="status-dot"></span><span>YOUR SPACE, IN SYNC</span></div>
+          <div class="sidebar-profile"><div class="avatar">MD</div><div><strong>Madison Davis</strong><small>Personal dashboard</small></div><span class="profile-menu">···</span></div>
+        </div>
+      </aside>
+
+      <main class="dash-main">
+        <header class="topbar">
+          <div class="breadcrumb"><span>PERSONAL</span><span class="crumb-slash">/</span><strong id="topbar-section">VIEW</strong></div>
+          <div class="topbar-right"><span class="today-label" id="today-label"></span><span class="topbar-avatar">MD</span></div>
+        </header>
+
+        <section class="view active" id="view-view" aria-labelledby="welcome-title">
+          <div class="view-wrap">
+            <div class="welcome-row">
+              <div>
+                <div class="eyebrow"><span class="eyebrow-line"></span> YOUR PERSONAL DASHBOARD</div>
+                <h1 id="welcome-title"><span id="greeting">Good day</span>, Madison<span class="title-period">.</span></h1>
+                <p class="welcome-copy">A little space to keep your life moving in the right direction.</p>
+              </div>
+              <div class="date-card"><span class="date-sun">◒</span><div><strong id="date-day"></strong><span id="date-full"></span></div></div>
+            </div>
+
+            <div class="view-grid">
+              <article class="panel focus-card">
+                <div class="panel-heading"><div><div class="eyebrow">A MOMENT TO CHECK IN</div><h2>Today, at a glance</h2></div><span class="panel-glyph">✳</span></div>
+                <div class="focus-quote">“Small, consistent steps<br />make a life feel like your own.”</div>
+                <div class="focus-footer"><span><i class="status-dot"></i> ONE DAY AT A TIME</span><span id="weekday-label"></span></div>
+              </article>
+              <article class="panel links-card">
+                <div class="eyebrow">YOUR CORNER OF THE INTERNET</div><h2>Elsewhere<span class="title-period">.</span></h2>
+                <a class="link-row" href="https://compaulo.com/" target="_blank" rel="noreferrer"><span class="link-monogram">C</span><span><strong>Compaulo</strong><small>Portfolio &amp; personal work</small></span><span class="external-arrow">↗</span></a>
+                <a class="link-row" href="https://madison-davis.github.io/MajorProject-Novum/" target="_blank" rel="noreferrer"><span class="link-monogram">N</span><span><strong>Novum</strong><small>A project in discovery</small></span><span class="external-arrow">↗</span></a>
+              </article>
+            </div>
+
+            <div class="section-heading"><div><div class="eyebrow">A FEW THINGS IN MOTION</div><h2>Life, lately</h2></div><span class="quiet-label">YOUR NOTES, GOALS &amp; PLANS</span></div>
+            <div class="life-grid">
+              <article class="panel note-card">
+                <div class="card-topline"><span class="eyebrow">FROM YOUR OBSIDIAN VAULT</span><span class="note-icon">▤</span></div>
+                <h3>A year of steady care</h3>
+                <p>Your 2026 goals bring together personal projects and everyday routines: improving Compaulo, moving notes into Obsidian, and making space for movement, nourishing lunches, and a calmer morning routine.</p>
+                <div class="tag-row"><span class="tag">PERSONAL GOALS</span><span class="tag">2026</span></div>
+                <a class="text-link" href="obsidian://open?vault=compaulo-codex&amp;file=Personal%2FPersonal%20-%20Goals" title="Open the goals note in Obsidian">OPEN GOALS NOTE <span>↗</span></a>
+              </article>
+              <article class="panel goals-card">
+                <div class="goals-head"><div><div class="eyebrow">YOUR 2026 INTENTIONS</div><h3>Progress worth noticing</h3></div><span class="goal-count">6 <small>done</small></span></div>
+                <div class="goal-list">
+                  <div class="goal-row"><span class="check-mark">✓</span><span>Improve Compaulo</span><span class="goal-state">DONE</span></div>
+                  <div class="goal-row"><span class="check-mark">✓</span><span>Migrate notes to Obsidian</span><span class="goal-state">DONE</span></div>
+                  <div class="goal-row"><span class="check-mark">✓</span><span>Find a gym rhythm &amp; fitness plan</span><span class="goal-state">DONE</span></div>
+                  <div class="goal-row"><span class="check-mark">✓</span><span>Build a healthy lunch routine</span><span class="goal-state">DONE</span></div>
+                  <div class="goal-row"><span class="check-mark">✓</span><span>Care for scalp health</span><span class="goal-state">DONE</span></div>
+                  <div class="goal-row"><span class="check-mark">✓</span><span>Wear sunscreen in the morning</span><span class="goal-state">DONE</span></div>
+                </div>
+                <div class="goals-foot"><span>From Personal — Goals.md</span><a href="obsidian://open?vault=compaulo-codex&amp;file=Personal%2FPersonal%20-%20Goals" aria-label="Open goals in Obsidian">↗</a></div>
+              </article>
+            </div>
+            <div class="view-bottom"><span class="bottom-orbit">◌</span><span>Make room for what matters.</span><span class="bottom-right">A QUIETER KIND OF PRODUCTIVITY</span></div>
+          </div>
+        </section>
+
+        <section class="view" id="view-vitality" aria-labelledby="vitality-title">
+          <div class="page-intro"><div><div class="eyebrow"><span class="eyebrow-line"></span> YOUR WELLBEING, IN ONE PLACE</div><h1 id="vitality-title">Vitality<span class="title-period">.</span></h1><p>Simple tracking for the habits and health markers that matter to you.</p></div><span class="privacy-pill"><span class="status-dot"></span> PRIVATE TO THIS DEVICE</span></div>
+          <div class="vitality-grid">
+            <article class="panel vitality-source-card"><div class="vitality-card-top"><span class="vitality-icon">◉</span><span class="tag">NUTRITION</span></div><div class="eyebrow">FOOD &amp; DAILY RHYTHM</div><h2>Nourish consistently.</h2><p>Your nutrition tracker lives in your personal spreadsheet. Keep meals, grocery ideas, and patterns together without turning food into a score.</p><div class="source-note"><span>↗</span> SOURCE: GOOGLE SHEETS · NUTRITION</div><a class="button-quiet" href="https://docs.google.com/spreadsheets/d/1ZrKmhuijHuqvMnU4HpC_AG9-UEum2fO3PlOQjgmqvuY/edit?gid=322968942#gid=322968942" target="_blank" rel="noreferrer">OPEN NUTRITION TRACKER <span>↗</span></a></article>
+            <article class="panel vitality-source-card"><div class="vitality-card-top"><span class="vitality-icon">◌</span><span class="tag">MEDICAL</span></div><div class="eyebrow">THYROID HEALTH</div><h2>Keep the full picture.</h2><p>A calm place to review your thyroid-related records and notes. Use the linked sheet as your source of truth for results and care-team guidance.</p><div class="source-note"><span>↗</span> SOURCE: GOOGLE SHEETS · THYROID</div><a class="button-quiet" href="https://docs.google.com/spreadsheets/d/1ZrKmhuijHuqvMnU4HpC_AG9-UEum2fO3PlOQjgmqvuY/edit?gid=6227607#gid=6227607" target="_blank" rel="noreferrer">OPEN THYROID TRACKER <span>↗</span></a></article>
+          </div>
+          <div class="section-heading vitality-heading"><div><div class="eyebrow">MOVEMENT &amp; STRENGTH</div><h2>Fitness studio</h2></div><span class="quiet-label">A PERSONAL LOG, NOT A SCORECARD</span></div>
+          <div class="panel fitness-panel">
+            <div class="fitness-tabs" role="tablist" aria-label="Fitness sections">
+              <button class="fitness-tab active" role="tab" aria-selected="true" data-fitness="library"><span>01</span> Library</button>
+              <button class="fitness-tab" role="tab" aria-selected="false" data-fitness="calendar"><span>02</span> Calendar</button>
+              <button class="fitness-tab" role="tab" aria-selected="false" data-fitness="active"><span>03</span> Active workout</button>
+              <button class="fitness-tab" role="tab" aria-selected="false" data-fitness="results"><span>04</span> Results</button>
+            </div>
+            <div class="fitness-content" id="fitness-content"></div>
+          </div>
+          <div class="vitality-disclaimer">Health data stays in your linked spreadsheet. This dashboard is for personal organization and is not medical advice.</div>
+        </section>
+
+        <section class="view voyage-view" id="view-voyage" aria-labelledby="voyage-title">
+          <div class="voyage-title-row"><div><div class="eyebrow"><span class="eyebrow-line"></span> PLACES, PLANS &amp; GOOD MEMORIES</div><h1 id="voyage-title">The city, collected<span class="title-period">.</span></h1><p>Every little pin is a reason to remember where you were.</p></div><button class="button-primary" id="add-event-button"><span>＋</span> ADD A PLACE</button></div>
+          <div class="event-controls panel">
+            <div class="category-switch" role="group" aria-label="Filter by category"><button class="category-btn active" data-filter="all">All pins</button><button class="category-btn" data-filter="restaurant">Restaurants</button><button class="category-btn" data-filter="event">Events</button></div>
+            <div class="month-control" id="month-control"><div class="season-pills" id="season-pills"><button class="season-pill active" data-season="all">All year</button><button class="season-pill" data-season="fall">Fall</button><button class="season-pill" data-season="winter">Winter</button><button class="season-pill" data-season="spring">Spring</button><button class="season-pill" data-season="summer">Summer</button></div><div class="month-slider-row"><span class="month-start">AUG</span><input aria-label="Filter events by month, August through July" id="month-slider" type="range" min="0" max="11" value="0" /><span class="month-current" id="month-current">AUGUST</span><span class="month-end">JUL</span></div></div>
+            <div class="map-count"><span class="status-dot"></span><span id="map-count-label">0 PLACES</span></div>
+          </div>
+          <div class="event-workspace">
+            <div class="map-card panel">
+              <div class="map-toolbar">
+                <div class="region-switch" role="group" aria-label="Choose map region">
+                  <button class="region-btn active" data-region="sarasota">SARASOTA, FL</button>
+                  <button class="region-btn" data-region="bay-area">SAN FRANCISCO BAY AREA</button>
+                </div>
+                <div class="map-tools"><span>DRAG TO EXPLORE</span><button id="zoom-out" aria-label="Zoom out">−</button><button id="zoom-in" aria-label="Zoom in">＋</button><button id="map-reset" aria-label="Reset map view">⌖</button></div>
+              </div>
+              <div class="leaflet-map" id="leaflet-map" role="application" aria-label="Interactive grayscale map of Sarasota, Florida"></div>
+              <div class="map-footer"><span><i></i> SELECT A PIN TO KEEP ITS PREVIEW OPEN</span><button id="clear-selection">CLEAR SELECTION ×</button></div>
+            </div>
+            <aside class="event-preview panel" id="event-preview"></aside>
+          </div>
+          <div class="section-heading list-heading"><div><div class="eyebrow">YOUR PERSONAL ARCHIVE</div><h2>Places &amp; moments</h2></div><span class="quiet-label" id="list-count">0 ENTRIES</span></div>
+          <div class="event-list panel" id="event-list"></div>
+          <div class="events-footnote"><span>YOUR MAP, YOUR MEMORIES.</span><span>New pins are saved in this browser.</span></div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="event-dialog" class="event-dialog">
+      <form method="dialog" id="event-form">
+        <div class="dialog-head"><div><div class="eyebrow">ADD TO YOUR CITY ATLAS</div><h2>Save a place<span class="title-period">.</span></h2></div><button class="dialog-close" value="cancel" aria-label="Close">×</button></div>
+        <label>What are we remembering?<input name="title" required maxlength="80" placeholder="A favorite dinner, a show, a day out…" /></label>
+        <div class="form-row"><label>Type<select name="category"><option value="restaurant">Restaurant</option><option value="event">Event</option></select></label><label>Date<input name="date" type="date" required /></label></div>
+        <div class="form-row"><label>Map region<select name="region"><option value="sarasota">Sarasota, FL</option><option value="bay-area">San Francisco Bay Area</option></select></label><label>Neighborhood or address<input name="location" maxlength="90" placeholder="e.g. downtown Sarasota" /></label></div>
+        <label>Tell the story<textarea name="description" rows="3" maxlength="500" placeholder="A note to future you…"></textarea></label>
+        <label>Image URL(s), one per line<input name="images" placeholder="https://…" /></label>
+        <label>Links, one per line<input name="links" placeholder="https://…" /></label>
+        <div class="form-row"><label>Latitude<input name="lat" type="number" step="0.0001" required /></label><label>Longitude<input name="lng" type="number" step="0.0001" required /></label></div>
+        <p class="form-hint">Click the map to set a pin location, or enter coordinates here. Choose a region first; the map opens centered there.</p>
+        <div class="dialog-actions"><button class="button-quiet" value="cancel">CANCEL</button><button class="button-primary" id="save-event-button" value="default">SAVE PLACE <span>↗</span></button></div>
+      </form>
+    </dialog>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
