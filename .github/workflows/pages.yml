@@ -33,8 +33,6 @@ jobs:
         run: |
           mkdir -p _site
           cp index.html app.js styles.css _site/
-          mkdir -p _site/voyage
-          cp voyage/config.js voyage/store.js _site/voyage/
           cp _theme-source/styles.css _site/compaulo-theme.css
 
       - name: Upload site files

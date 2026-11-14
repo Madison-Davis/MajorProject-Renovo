@@ -41,6 +41,34 @@ const machineTrends = [
   ["Lat pulldown", "+8%", "steady"], ["Leg press", "+5%", "steady"], ["Chest press", "+3%", "building"], ["Seated row", "+6%", "steady"],
 ];
 
+const fallbackVoyageStore = {
+  mode: "local",
+  async session() {
+    return null;
+  },
+  async load() {
+    try {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      return Array.isArray(stored) ? stored : [];
+    } catch (error) {
+      console.warn("Could not load local city pins.", error);
+      return [];
+    }
+  },
+  async save(places) {
+    const sanitized = Array.isArray(places) ? places : [];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+    return sanitized;
+  },
+  async signIn() {
+    throw new Error("Local-only mode: sign-in is unavailable in this version.");
+  },
+  async signOut() {
+    return null;
+  },
+};
+window.voyageStoreReady ??= Promise.resolve(fallbackVoyageStore);
+
 let events = loadEvents();
 let workoutLogs = loadWorkoutLogs();
 let activeWorkout = null;
