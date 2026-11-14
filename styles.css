@@ -369,3 +369,10 @@ a { color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+.voyage-account { margin: 12px 0 20px; }
+.voyage-account [hidden] { display: none !important; }
+#voyage-login-fields { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.voyage-account label { display: inline-flex; flex-direction: column; gap: 6px; font-size: 12px; }
+.voyage-account input { padding: 10px; border: 1px solid #7775; border-radius: 6px; font: inherit; }
+#voyage-import-label { margin-left: 12px; }

@@ -103,6 +103,15 @@
 
         <section class="view voyage-view" id="view-voyage" aria-labelledby="voyage-title">
           <p id="voyage-save-status" class="form-hint" role="status">Connecting to saved places…</p>
+          <form id="voyage-login" class="voyage-account" hidden>
+            <div id="voyage-login-fields">
+              <label>Email <input name="email" type="email" autocomplete="username" required /></label>
+              <label>Password <input name="password" type="password" autocomplete="current-password" required /></label>
+              <button class="button-quiet" type="submit">SIGN IN</button>
+            </div>
+            <button class="button-quiet" type="button" id="voyage-sign-out" hidden>SIGN OUT</button>
+            <label id="voyage-import-label" hidden>Import saved places <input id="voyage-import" type="file" accept=".json,application/json" /></label>
+          </form>
           <div class="voyage-title-row"><div><div class="eyebrow"><span class="eyebrow-line"></span> PLACES, PLANS &amp; GOOD MEMORIES</div><h1 id="voyage-title">The city, collected<span class="title-period">.</span></h1><p>Every little pin is a reason to remember where you were.</p></div><button class="button-primary" id="add-event-button"><span>＋</span> ADD A PLACE</button></div>
           <div class="event-controls panel">
             <div class="category-switch" role="group" aria-label="Filter by category"><button class="category-btn active" data-filter="all">All pins</button><button class="category-btn" data-filter="restaurant">Restaurants</button><button class="category-btn" data-filter="event">Events</button></div>
@@ -147,6 +156,8 @@
     </dialog>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="voyage/config.js"></script>
+    <script src="voyage/store.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

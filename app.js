@@ -74,32 +74,41 @@ function normalizeEvent(event) {
   const inferredRegion = /bay area|san francisco|oakland|berkeley/i.test(event.location || "") ? "bay-area" : "sarasota";
   const region = MAP_REGIONS[event.region] ? event.region : inferredRegion;
   const center = MAP_REGIONS[region].center;
-  return { ...event, region, lat: Number(event.lat) || center[0], lng: Number(event.lng) || center[1] };
+  return { ...event, region, lat: Number.isFinite(Number(event.lat)) && event.lat != null && event.lat !== "" ? Number(event.lat) : center[0], lng: Number.isFinite(Number(event.lng)) && event.lng != null && event.lng !== "" ? Number(event.lng) : center[1] };
 }
 async function persistEvents(places) {
-  const response = await fetch('/api/voyage/places', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ places }),
-    signal: AbortSignal.timeout(10000),
-  });
-  if (!response.ok) throw new Error('Could not save places to voyage/public/data.json. Make sure the local server is running.');
-  return (await response.json()).places;
+  const store = await window.voyageStoreReady;
+  return store.save(places);
 }
 async function loadVoyagePlaces() {
   try {
-    const response = await fetch('/api/voyage/places', { cache: 'no-store', signal: AbortSignal.timeout(10000) });
-    if (!response.ok) throw new Error('Voyage server unavailable');
-    let places = (await response.json()).places;
-    const legacy = events.filter((place) => !place.seed);
-    if (legacy.length) places = await persistEvents(legacy);
+    const store = await window.voyageStoreReady;
+    $('#voyage-login').hidden = store.mode !== 'cloud';
+    if (store.mode === 'cloud') {
+      const session = await store.session();
+      $('#voyage-login-fields').hidden = !!session;
+      $('#voyage-sign-out').hidden = !session;
+      $('#voyage-import-label').hidden = !session;
+      if (!session) {
+        events = seedEvents.map((place) => ({ ...place }));
+        renderEvents();
+        $('#voyage-save-status').textContent = 'Sign in to see and save your places across devices.';
+        return;
+      }
+    }
+    let places = await store.load();
+    const legacy = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    if (Array.isArray(legacy)) {
+      const saved = legacy.filter((place) => !place.seed && !String(place.id).startsWith('seed-')).map(normalizeEvent);
+      if (saved.length) places = await store.save(saved);
+      localStorage.removeItem(STORAGE_KEY);
+    }
     events = [...seedEvents, ...places.map(normalizeEvent)];
-    localStorage.removeItem(STORAGE_KEY);
-    $('#voyage-save-status').textContent = 'Places saved on this Mac';
+    $('#voyage-save-status').textContent = store.mode === 'cloud' ? 'Your places are synced across devices.' : 'Places saved on this Mac';
     renderEvents();
   } catch (error) {
-    $('#voyage-save-status').textContent = 'File storage offline. Start python3 server.py and reload. Browser-saved places remain available.';
-    console.warn('Could not load Voyage file storage.', error);
+    $('#voyage-save-status').textContent = error.message || 'Could not connect to saved places. Please retry.';
+    console.warn('Could not load Voyage storage.', error);
   }
 }
 function loadWorkoutLogs() {
@@ -457,7 +466,7 @@ function initEvents() {
       await voyageReady;
       const places = await persistEvents([newEvent]);
       events = [...seedEvents, ...places.map(normalizeEvent)];
-      $('#voyage-save-status').textContent = 'Place saved on this Mac';
+      $('#voyage-save-status').textContent = (await window.voyageStoreReady).mode === 'cloud' ? 'Place saved to your account.' : 'Place saved on this Mac';
     } catch (error) {
       $('#voyage-save-error').textContent = error.message || 'Could not save this place. Please retry.';
       return;
@@ -527,4 +536,41 @@ refreshObsidianGoals();
 setInterval(refreshObsidianGoals, 5000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshObsidianGoals(); });
 
-const voyageReady = loadVoyagePlaces();
+let voyageReady = loadVoyagePlaces();
+$('#voyage-login').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = form.querySelector('[type="submit"]');
+  button.disabled = true;
+  try {
+    const store = await window.voyageStoreReady;
+    await store.signIn(form.elements.email.value.trim(), form.elements.password.value);
+    form.elements.password.value = '';
+    voyageReady = loadVoyagePlaces();
+    await voyageReady;
+  } catch (error) {
+    $('#voyage-save-status').textContent = error.message || 'Could not sign in.';
+  } finally { button.disabled = false; }
+});
+$('#voyage-sign-out').addEventListener('click', async () => {
+  try {
+    await (await window.voyageStoreReady).signOut();
+    events = seedEvents.map((place) => ({ ...place }));
+    renderEvents();
+    voyageReady = loadVoyagePlaces();
+  } catch (error) { $('#voyage-save-status').textContent = error.message; }
+});
+$('#voyage-import').addEventListener('change', async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    const places = Array.isArray(data) ? data : data.places;
+    if (!Array.isArray(places) || places.some((place) => !place || typeof place.id !== 'string' || typeof place.title !== 'string' || !['restaurant', 'event'].includes(place.category))) throw new Error('Choose a Voyage JSON file containing a places array.');
+    const saved = places.filter((place) => !place.seed && !place.id.startsWith('seed-')).map(normalizeEvent);
+    if (saved.length) await persistEvents(saved);
+    voyageReady = loadVoyagePlaces();
+    await voyageReady;
+  } catch (error) { $('#voyage-save-status').textContent = error.message; }
+  finally { event.target.value = ''; }
+});

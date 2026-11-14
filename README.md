@@ -1,5 +1,10 @@
 # Voruva
 
+For saving Voyage places from the deployed GitHub Pages site, follow
+[voyage/SETUP.md](voyage/SETUP.md) to connect a Free Supabase database.
+Cloud configuration enables private sign-in and saving across devices.
+The local workflow below remains available when cloud settings are empty.
+
 Run the dashboard locally with its read-only Obsidian connection:
 
 ```sh
@@ -25,7 +30,7 @@ loopback address. A GitHub Pages/static deployment cannot read local Obsidian
 files and will show the connection as offline. Private note contents are read
 at request time, never copied into the repository or published assets.
 
-Voyage places save to `voyage/public/data.json` in its `places` array through
+In local file mode, Voyage places save to `voyage/public/data.json` in its `places` array through
 `server.py`. Existing browser places migrate automatically on first successful
 connection. Starter examples are not saved. Saving requires the local server;
 failed saves leave the form open for retry. Existing file metadata is preserved.
