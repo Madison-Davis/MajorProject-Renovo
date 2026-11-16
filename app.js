@@ -77,6 +77,7 @@ let fitnessView = "library";
 let selectedExerciseId = "";
 let selectedMuscleId = "";
 let progressionView = "selected";
+let weeklyVolumeView = "timeline";
 let fitNotesStatus = fitNotesData.workouts.length
   ? "Loaded saved FitNotes data from this browser."
   : "Import a FitNotes .fnw backup to create your training charts.";
@@ -318,11 +319,14 @@ function renderFitnessInsights(summary, selectedExercise, selectedMuscle) {
     : progressionView === "muscle"
       ? "One chart for all trained exercises in the selected group; multi-tagged exercises appear in each group."
       : "All trained exercises on one chart, normalized to their first logged load.";
+  const weeklyVolumeDisplay = weeklyVolumeView === "table"
+    ? renderWeeklyMuscleTable(summary.muscles, summary.weeklyActivity)
+    : renderWeeklyMuscleTimeline(summary.muscles, summary.weeklyActivity);
   return `<div class="fitness-stat-grid"><div class="fitness-stat"><strong>${summary.workoutCount}</strong><span>WORKOUTS</span></div><div class="fitness-stat"><strong>${summary.totalSets}</strong><span>COMPLETED SETS</span></div><div class="fitness-stat"><strong>${summary.exerciseCount}</strong><span>EXERCISES</span></div><div class="fitness-stat"><strong>${escapeHtml(range)}</strong><span>DATE RANGE</span></div></div>
     <div class="fitness-insight-grid">
       <article class="fitness-insight-card"><div class="fitness-chart-heading"><div><div class="eyebrow">MUSCLE GROUPS</div><h4>Share of training</h4></div><span class="chart-note">TAGGED SETS</span></div>${renderMuscleShareChart(summary.muscles)}</article>
       <article class="fitness-insight-card"><div class="fitness-chart-heading"><div><div class="eyebrow">WEEKLY VOLUME</div><h4>Average sets per week</h4><p>Multi-muscle exercises count in each tagged group.</p></div><span class="chart-note">${summary.weeks.toFixed(1)} WEEKS TRACKED</span></div>${renderWeeklyMuscleChart(summary.muscles)}</article>
-      <article class="fitness-insight-card fitness-insight-wide"><div class="fitness-chart-heading"><div><div class="eyebrow">WEEKLY VOLUME TIMELINE</div><h4>Actual sets each week</h4><p>Weekly set counts for each muscle group across the imported date range.</p></div></div>${renderWeeklyMuscleTimeline(summary.muscles, summary.weeklyActivity)}</article>
+      <article class="fitness-insight-card fitness-insight-wide"><div class="fitness-chart-heading"><div><div class="eyebrow">WEEKLY VOLUME</div><h4>Actual sets each week</h4><p>Weekly set counts for each muscle group across the imported date range.</p></div><div class="progression-mode-switch" role="group" aria-label="Weekly volume display">${[["timeline", "TIME SERIES"], ["table", "TABLE"]].map(([view, label]) => `<button type="button" data-weekly-volume-view="${view}" class="${weeklyVolumeView === view ? "active" : ""}" aria-pressed="${weeklyVolumeView === view}">${label}</button>`).join("")}</div></div>${weeklyVolumeDisplay}</article>
       <article class="fitness-insight-card fitness-insight-wide"><div class="fitness-chart-heading"><div><div class="eyebrow">EXERCISE PROGRESSION</div><h4>${progressionView === "selected" ? "Best logged load by workout" : "Exercise load change over time"}</h4><p>${progressionDescription}</p></div><div class="progression-tools"><div class="progression-mode-switch" role="group" aria-label="Exercise progression display">${[["selected", "ONE EXERCISE"], ["all", "SHOW ALL"], ["muscle", "BY MUSCLE GROUP"]].map(([mode, label]) => `<button type="button" data-progression-view="${mode}" class="${progressionView === mode ? "active" : ""}" aria-pressed="${progressionView === mode}">${label}</button>`).join("")}</div>${progressionView === "selected" ? `<label class="exercise-select-label">EXERCISE<select id="exercise-trend-select">${exerciseOptions}</select></label>` : progressionView === "muscle" ? `<label class="exercise-select-label">MUSCLE GROUP<select id="muscle-trend-select">${muscleOptions}</select></label>` : ""}</div></div>${progressionChart}</article>
       <article class="fitness-insight-card fitness-insight-wide"><div class="fitness-chart-heading"><div><div class="eyebrow">CONSISTENCY</div><h4>Workouts per week</h4><p>Completed sessions across your imported history.</p></div><span class="chart-note">${summary.weeklyActivity.length > 12 ? "LATEST 12 WEEKS · MONDAY START" : "WEEK STARTS MONDAY"}</span></div>${renderWeeklyWorkoutChart(summary.weeklyActivity)}</article>
       <article class="fitness-insight-card fitness-insight-wide"><div class="fitness-chart-heading"><div><div class="eyebrow">MOVEMENT MAP</div><h4>Exercises for each muscle group</h4><p>Exercises tagged for multiple groups count in each one.</p></div></div>${renderMuscleFocusList(summary.muscles)}</article>
@@ -363,6 +367,13 @@ function renderWeeklyMuscleTimeline(muscles, weeklyActivity) {
     }).join("")}
     ${labelIndexes.map((index) => `<text x="${x(index)}" y="${height - 12}" text-anchor="${index === 0 ? "start" : index === weeklyActivity.length - 1 ? "end" : "middle"}" class="chart-axis-label">${escapeHtml(formatDate(weeklyActivity[index].weekStart, { month: "short", day: "numeric", year: "2-digit" }))}</text>`).join("")}
   </svg><div class="weekly-timeline-legend">${muscles.map((muscle, index) => `<span class="chart-series-label" data-chart-series="${index}"><i></i>${escapeHtml(muscle.name)}</span>`).join("")}</div>`;
+}
+function renderWeeklyMuscleTable(muscles, weeklyActivity) {
+  if (!muscles.length || !weeklyActivity.length) return `<div class="chart-empty">No weekly set counts to show.</div>`;
+  return `<div class="weekly-volume-table-wrap" role="region" aria-label="Weekly completed sets by muscle group" tabindex="0"><table class="weekly-volume-table">
+    <thead><tr><th scope="col">WEEK OF</th>${muscles.map((muscle) => `<th scope="col">${escapeHtml(muscle.name)}</th>`).join("")}</tr></thead>
+    <tbody>${weeklyActivity.map((week) => `<tr><th scope="row">${escapeHtml(formatDate(week.weekStart, { month: "short", day: "numeric", year: "2-digit" }))}</th>${muscles.map((muscle) => `<td>${week.muscleSets[muscle.id] || 0}</td>`).join("")}</tr>`).join("")}</tbody>
+  </table></div>`;
 }
 function renderExerciseTrendChart(exercise) {
   if (!exercise?.points.length) return `<div class="chart-empty">No working loads recorded for this exercise yet.</div>`;
@@ -557,6 +568,10 @@ function bindFitnessActions() {
   });
   $$("[data-progression-view]", content).forEach((button) => button.addEventListener("click", () => {
     progressionView = button.dataset.progressionView;
+    renderFitness();
+  }));
+  $$("[data-weekly-volume-view]", content).forEach((button) => button.addEventListener("click", () => {
+    weeklyVolumeView = button.dataset.weeklyVolumeView;
     renderFitness();
   }));
   $$('[data-start-template]').forEach((button) => button.addEventListener("click", () => {
