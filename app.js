@@ -1,5 +1,6 @@
 const STORAGE_KEY = "madison-dashboard-events-v1";
 const WORKOUT_KEY = "madison-dashboard-workouts-v1";
+const FITNOTES_KEY = "madison-dashboard-fitnotes-v1";
 const MAP_REGIONS = {
   sarasota: { label: "Sarasota, FL", center: [27.3364, -82.5307], zoom: 12 },
   "bay-area": { label: "San Francisco Bay Area", center: [37.76, -122.34], zoom: 9.5 },
@@ -34,13 +35,6 @@ const starterLogs = [
   { date: "2026-11-06", name: "Lower body", duration: 34 },
   { date: "2026-11-10", name: "Full body", duration: 46 },
 ];
-const sampleMuscleBalance = [
-  ["Back", 76], ["Chest", 62], ["Quads", 59], ["Glutes", 54], ["Shoulders", 48], ["Hamstrings", 43], ["Arms", 39],
-];
-const machineTrends = [
-  ["Lat pulldown", "+8%", "steady"], ["Leg press", "+5%", "steady"], ["Chest press", "+3%", "building"], ["Seated row", "+6%", "steady"],
-];
-
 const fallbackVoyageStore = {
   mode: "local",
   async session() {
@@ -71,6 +65,8 @@ window.voyageStoreReady ??= Promise.resolve(fallbackVoyageStore);
 
 let events = loadEvents();
 let workoutLogs = loadWorkoutLogs();
+let fitNotesLoadError = "";
+let fitNotesData = loadFitNotesData();
 let activeWorkout = null;
 let activeFilter = "all";
 let selectedEventId = null;
@@ -79,6 +75,11 @@ let selectedSeason = "all";
 let monthOffset = 0;
 let monthLocked = false;
 let fitnessView = "library";
+let selectedExerciseId = "";
+let fitNotesStatus = fitNotesData.workouts.length
+  ? "Loaded saved FitNotes data from this browser."
+  : "Import a FitNotes .fnw backup to create your training charts.";
+let fitNotesError = "";
 let calendarDate = new Date();
 let activeRegion = "sarasota";
 let leafletMap = null;
@@ -147,6 +148,20 @@ function loadWorkoutLogs() {
     console.warn("Could not load saved workouts.", error);
   }
   return starterLogs.map((log) => ({ ...log }));
+}
+function loadFitNotesData() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(FITNOTES_KEY));
+    if (stored == null) return window.fitNotesAnalytics.emptyData();
+    if (!Array.isArray(stored.categories) || !Array.isArray(stored.exercises) || !Array.isArray(stored.workouts)) {
+      throw new Error("Saved FitNotes data is incomplete. Import your backup again.");
+    }
+    return stored;
+  } catch (error) {
+    fitNotesLoadError = error.message || "Could not read saved FitNotes data.";
+    console.warn("Could not load saved FitNotes data.", error);
+    return window.fitNotesAnalytics.emptyData();
+  }
 }
 function persistWorkoutLogs() {
   localStorage.setItem(WORKOUT_KEY, JSON.stringify(workoutLogs.filter((log) => !starterLogs.some((seed) => seed.date === log.date && seed.name === log.name))));
@@ -245,7 +260,7 @@ function renderFitness() {
 function renderLibrary() {
   return `<div class="fitness-pane-head"><div><div class="eyebrow">YOUR STARTER LIBRARY</div><h3>Machines &amp; templates</h3><p>Starter examples based on common gym machines. Edit these to match your own equipment and training sheet.</p></div><span class="tag">DEMO DATA</span></div>
     <div class="fitness-layout"><div><div class="eyebrow" style="margin-bottom:9px">MACHINES · MUSCLE GROUPS</div><div class="machine-list">${machineLibrary.map((machine, index) => `<div class="machine-row"><span class="machine-index">${String(index + 1).padStart(2, "0")}</span><span class="machine-info"><strong>${escapeHtml(machine.name)}</strong><small>Saved machine</small></span><span class="machine-muscle">${escapeHtml(machine.muscles)}</span></div>`).join("")}</div></div>
-      <div><div class="eyebrow" style="margin-bottom:9px">SAVED WORKOUT TEMPLATES</div><div class="template-list">${workoutTemplates.map((template, index) => `<div class="template-row"><span class="template-info"><strong>${escapeHtml(template.name)}</strong><small>${escapeHtml(template.detail)}</small></span><button data-start-template="${index}">START ↗</button></div>`).join("")}</div><p style="margin:12px 0 0;color:#777;font-size:8px;text-align:left;line-height:1.7">For your recorded exercise list, open the linked starter sheet in the Fitness results section.</p></div></div>`;
+      <div><div class="eyebrow" style="margin-bottom:9px">SAVED WORKOUT TEMPLATES</div><div class="template-list">${workoutTemplates.map((template, index) => `<div class="template-row"><span class="template-info"><strong>${escapeHtml(template.name)}</strong><small>${escapeHtml(template.detail)}</small></span><button data-start-template="${index}">START ↗</button></div>`).join("")}</div><p style="margin:12px 0 0;color:#777;font-size:8px;text-align:left;line-height:1.7">For exercises from your own log, import a FitNotes backup in the Insights section.</p></div></div>`;
 }
 function renderCalendar() {
   const year = calendarDate.getFullYear();
@@ -272,10 +287,157 @@ function renderActiveWorkout() {
   return `<div class="fitness-pane-head"><div><div class="eyebrow">IN PROGRESS · ${elapsed} MIN</div><h3>${escapeHtml(activeWorkout.name)}</h3><p>Change sets and weights as you go, then finish the session to add it to your calendar.</p></div><span class="tag">TODAY</span></div><div class="active-workout-head"><div><strong>Session notes</strong><small>${activeWorkout.exercises.length} movements · started ${new Date(activeWorkout.startedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</small></div><span class="status-dot"></span></div><div class="workout-sets">${activeWorkout.exercises.map((exercise, index) => `<div class="workout-set"><span>${escapeHtml(exercise)}</span><span>Sets <input aria-label="Sets for ${escapeHtml(exercise)}" type="number" min="1" max="10" value="3" /></span><span>Reps <input aria-label="Reps for ${escapeHtml(exercise)}" type="number" min="1" max="50" value="10" /></span><span>Load <input aria-label="Load for ${escapeHtml(exercise)}" type="number" min="0" max="999" placeholder="—" /></span></div>`).join("")}</div><div class="workout-actions"><button class="button-primary" data-complete-workout>FINISH WORKOUT ✓</button><button class="button-quiet" data-cancel-workout>CANCEL</button></div>`;
 }
 function renderResults() {
-  return `<div class="fitness-pane-head"><div><div class="eyebrow">A BALANCED VIEW OF YOUR WORK</div><h3>Strength, over time</h3><p>Illustrative starter estimates only. Replace them with your logged sets and exercise-machine results.</p></div><a class="button-quiet" href="https://docs.google.com/spreadsheets/d/1ZrKmhuijHuqvMnU4HpC_AG9-UEum2fO3PlOQjgmqvuY/edit?gid=524723206#gid=524723206" target="_blank" rel="noreferrer">OPEN FITNESS SOURCE SHEET ↗</a></div><div class="fitness-layout"><div><div class="eyebrow" style="margin-bottom:14px">WORK DISTRIBUTION BY MUSCLE GROUP</div><div class="progress-list">${sampleMuscleBalance.map(([muscle, percent]) => `<div class="progress-row"><span>${muscle}</span><span class="progress-track"><i style="width:${percent}%"></i></span><strong>${percent}%</strong></div>`).join("")}</div><div class="trend-caption"><span>Relative share of example training volume</span><span>LAST 4 WEEKS · SAMPLE</span></div></div><div><div class="eyebrow" style="margin-bottom:14px">MACHINE TRENDS</div><div class="machine-list">${machineTrends.map(([machine, change, note]) => `<div class="machine-row"><span class="machine-index">↗</span><span class="machine-info"><strong>${machine}</strong><small>${note} · example trend</small></span><span class="machine-muscle">${change}</span></div>`).join("")}</div><div class="trend-caption"><span>Change in working load</span><span>ILLUSTRATIVE</span></div></div></div>`;
+  const summary = window.fitNotesAnalytics.summarize(fitNotesData);
+  const selectedExercise = summary.exercises.find((exercise) => exercise.id === selectedExerciseId) ||
+    summary.exercises.find((exercise) => exercise.points.length) ||
+    summary.exercises[0];
+  if (selectedExercise) selectedExerciseId = selectedExercise.id;
+  const status = fitNotesLoadError || fitNotesStatus;
+  return `<div class="fitness-pane-head"><div><div class="eyebrow">YOUR FITNOTES TRAINING</div><h3>Strength, over time</h3><p>Charts use completed sets from your imported FitNotes backups. Your data stays in this browser.</p></div><div class="fitnotes-import-actions"><input class="fitnotes-file-input" id="fitnotes-file" type="file" accept=".fnw,.json,application/json" /><button class="button-primary" type="button" data-open-fitnotes>IMPORT FITNOTES BACKUP <span>↥</span></button>${fitNotesData.workouts.length ? `<button class="button-quiet" type="button" data-clear-fitnotes> CLEAR IMPORTED DATA</button>` : ""}</div></div>
+    <div class="fitnotes-import-status" role="status">${escapeHtml(status)}</div>${fitNotesError ? `<p class="fitnotes-import-error" role="alert">${escapeHtml(fitNotesError)}</p>` : ""}
+    ${summary.workoutCount ? renderFitnessInsights(summary, selectedExercise) : `<div class="fitnotes-empty"><span class="preview-orbit">◌</span><h4>Your training will show up here.</h4><p>Import a FitNotes <code>.fnw</code> backup to see your muscle-group split, weekly sets, exercise progress, and training history.</p></div>`}`;
+}
+function renderFitnessInsights(summary, selectedExercise) {
+  const range = `${formatDate(summary.firstDate, { month: "short", day: "numeric", year: "numeric" })} – ${formatDate(summary.lastDate, { month: "short", day: "numeric", year: "numeric" })}`;
+  const exerciseOptions = summary.exercises.map((exercise) =>
+    `<option value="${escapeHtml(exercise.id)}" ${exercise.id === selectedExercise?.id ? "selected" : ""}>${escapeHtml(exercise.name)}</option>`
+  ).join("");
+  return `<div class="fitness-stat-grid"><div class="fitness-stat"><strong>${summary.workoutCount}</strong><span>WORKOUTS</span></div><div class="fitness-stat"><strong>${summary.totalSets}</strong><span>COMPLETED SETS</span></div><div class="fitness-stat"><strong>${summary.exerciseCount}</strong><span>EXERCISES</span></div><div class="fitness-stat"><strong>${escapeHtml(range)}</strong><span>DATE RANGE</span></div></div>
+    <div class="fitness-insight-grid">
+      <article class="fitness-insight-card"><div class="fitness-chart-heading"><div><div class="eyebrow">MUSCLE GROUPS</div><h4>Share of training</h4></div><span class="chart-note">COMPLETED SETS</span></div>${renderMuscleShareChart(summary.muscles)}</article>
+      <article class="fitness-insight-card"><div class="fitness-chart-heading"><div><div class="eyebrow">WEEKLY VOLUME</div><h4>Average sets per week</h4></div><span class="chart-note">${summary.weeks.toFixed(1)} WEEKS TRACKED</span></div>${renderWeeklyMuscleChart(summary.muscles)}</article>
+      <article class="fitness-insight-card fitness-insight-wide"><div class="fitness-chart-heading"><div><div class="eyebrow">EXERCISE PROGRESSION</div><h4>Best logged load by workout</h4><p>Choose an exercise to follow its working-load trend.</p></div><label class="exercise-select-label">EXERCISE<select id="exercise-trend-select">${exerciseOptions}</select></label></div>${renderExerciseTrendChart(selectedExercise)}</article>
+      <article class="fitness-insight-card fitness-insight-wide"><div class="fitness-chart-heading"><div><div class="eyebrow">CONSISTENCY</div><h4>Workouts per week</h4><p>Completed sessions across your imported history.</p></div><span class="chart-note">${summary.weeklyActivity.length > 12 ? "LATEST 12 WEEKS · MONDAY START" : "WEEK STARTS MONDAY"}</span></div>${renderWeeklyWorkoutChart(summary.weeklyActivity)}</article>
+      <article class="fitness-insight-card fitness-insight-wide"><div class="fitness-chart-heading"><div><div class="eyebrow">MOVEMENT MAP</div><h4>Exercises for each muscle group</h4><p>Multi-tagged exercises split their sets evenly across FitNotes categories.</p></div></div>${renderMuscleFocusList(summary.muscles)}</article>
+      <article class="fitness-insight-card fitness-insight-wide"><div class="fitness-chart-heading"><div><div class="eyebrow">EXERCISE HISTORY</div><h4>What you’ve trained</h4><p>Load change compares the first and latest workout with a recorded load.</p></div></div>${renderExerciseHistory(summary.exercises)}</article>
+    </div>`;
+}
+function renderMuscleShareChart(muscles) {
+  if (!muscles.length) return `<p class="chart-empty">No categorized sets in this export.</p>`;
+  return `<div class="progress-list insight-progress-list">${muscles.map((muscle) => `<div class="progress-row"><span>${escapeHtml(muscle.name)}</span><span class="progress-track"><i style="width:${Math.min(100, muscle.share)}%"></i></span><strong>${muscle.share.toFixed(1)}%</strong></div>`).join("")}</div><div class="trend-caption"><span>Share of all completed sets</span><span>${muscles.length} GROUPS</span></div>`;
+}
+function renderWeeklyMuscleChart(muscles) {
+  if (!muscles.length) return `<p class="chart-empty">Import workouts with completed sets to see weekly volume.</p>`;
+  const maximum = Math.max(...muscles.map((muscle) => muscle.setsPerWeek), 1);
+  return `<div class="weekly-muscle-list">${muscles.map((muscle) => `<div class="weekly-muscle-row"><span>${escapeHtml(muscle.name)}</span><span class="progress-track"><i style="width:${(muscle.setsPerWeek / maximum) * 100}%"></i></span><strong>${muscle.setsPerWeek.toFixed(1)}</strong></div>`).join("")}</div><div class="trend-caption"><span>Average completed sets per week</span><span>FULL DATE RANGE</span></div>`;
+}
+function renderExerciseTrendChart(exercise) {
+  if (!exercise?.points.length) return `<div class="chart-empty">No working loads recorded for this exercise yet.</div>`;
+  const width = 760;
+  const height = 220;
+  const padding = { top: 18, right: 24, bottom: 38, left: 48 };
+  const points = exercise.points;
+  const values = points.map((point) => point.load);
+  let minimum = Math.min(...values);
+  let maximum = Math.max(...values);
+  if (minimum === maximum) {
+    minimum = Math.max(0, minimum - 1);
+    maximum += 1;
+  }
+  const x = (index) => points.length === 1
+    ? padding.left + (width - padding.left - padding.right) / 2
+    : padding.left + (index / (points.length - 1)) * (width - padding.left - padding.right);
+  const y = (value) => padding.top + ((maximum - value) / (maximum - minimum)) * (height - padding.top - padding.bottom);
+  const ticks = [maximum, (maximum + minimum) / 2, minimum];
+  const line = points.map((point, index) => `${x(index)},${y(point.load)}`).join(" ");
+  const labelIndexes = [...new Set([0, Math.floor((points.length - 1) / 2), points.length - 1])];
+  return `<svg class="fitness-chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Best logged load for ${escapeHtml(exercise.name)} over time">
+    ${ticks.map((tick) => `<g><line x1="${padding.left}" x2="${width - padding.right}" y1="${y(tick)}" y2="${y(tick)}" class="chart-grid-line"></line><text x="${padding.left - 9}" y="${y(tick) + 3}" text-anchor="end" class="chart-axis-label">${tick.toLocaleString(undefined, { maximumFractionDigits: 1 })}</text></g>`).join("")}
+    <polyline points="${line}" class="chart-trend-line"></polyline>
+    ${points.map((point, index) => `<circle cx="${x(index)}" cy="${y(point.load)}" r="3.5" class="chart-trend-point"><title>${escapeHtml(formatDate(point.date, { month: "short", day: "numeric", year: "numeric" }))}: ${point.load} load</title></circle>`).join("")}
+    ${labelIndexes.map((index) => `<text x="${x(index)}" y="${height - 10}" text-anchor="${index === 0 ? "start" : index === points.length - 1 ? "end" : "middle"}" class="chart-axis-label">${escapeHtml(formatDate(points[index].date, { month: "short", day: "numeric" }))}</text>`).join("")}
+    <text x="${padding.left}" y="11" class="chart-axis-label">LOAD</text>
+  </svg><div class="trend-caption"><span>${escapeHtml(exercise.name)} · ${points.length} workouts with a recorded load</span><span>${points[0].load} → ${points[points.length - 1].load}</span></div>`;
+}
+function renderWeeklyWorkoutChart(activity) {
+  if (!activity.length) return `<p class="chart-empty">No completed workouts to chart yet.</p>`;
+  const weeks = activity.slice(-12);
+  const width = 760;
+  const height = 190;
+  const padding = { top: 16, right: 16, bottom: 38, left: 38 };
+  const maxWorkouts = Math.max(...weeks.map((week) => week.workouts), 1);
+  const slot = (width - padding.left - padding.right) / weeks.length;
+  const barWidth = Math.min(34, slot * 0.56);
+  return `<svg class="fitness-chart-svg weekly-chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Number of workouts per week">
+    ${[...new Set([0, Math.ceil(maxWorkouts / 2), maxWorkouts])].map((tick) => {
+      const top = padding.top + ((maxWorkouts - tick) / maxWorkouts) * (height - padding.top - padding.bottom);
+      return `<g><line x1="${padding.left}" x2="${width - padding.right}" y1="${top}" y2="${top}" class="chart-grid-line"></line><text x="${padding.left - 9}" y="${top + 3}" text-anchor="end" class="chart-axis-label">${tick}</text></g>`;
+    }).join("")}
+    ${weeks.map((week, index) => {
+      const barHeight = (week.workouts / maxWorkouts) * (height - padding.top - padding.bottom);
+      const barX = padding.left + (index * slot) + ((slot - barWidth) / 2);
+      const barY = height - padding.bottom - barHeight;
+      return `<g><rect x="${barX}" y="${barY}" width="${barWidth}" height="${barHeight}" rx="4" class="chart-week-bar"><title>${escapeHtml(formatDate(week.weekStart, { month: "short", day: "numeric" }))}: ${week.workouts} workouts, ${week.sets} sets</title></rect><text x="${barX + barWidth / 2}" y="${height - 12}" text-anchor="middle" class="chart-axis-label">${escapeHtml(formatDate(week.weekStart, { month: "short", day: "numeric" }))}</text></g>`;
+    }).join("")}
+  </svg>`;
+}
+function renderMuscleFocusList(muscles) {
+  if (!muscles.length) return `<p class="chart-empty">No exercise focus data found in this export.</p>`;
+  return `<div class="muscle-focus-grid">${muscles.map((muscle) => `<section class="muscle-focus-card"><div class="muscle-focus-head"><strong>${escapeHtml(muscle.name)}</strong><span>${muscle.setsPerWeek.toFixed(1)} sets / wk</span></div><ul>${muscle.exercises.map((exercise) => `<li><span>${escapeHtml(exercise.name)}</span><small>${exercise.workouts} ${exercise.workouts === 1 ? "workout" : "workouts"}</small></li>`).join("")}</ul></section>`).join("")}</div>`;
+}
+function renderExerciseHistory(exercises) {
+  return `<div class="exercise-history-wrap"><table class="exercise-history"><thead><tr><th>EXERCISE</th><th>SETS</th><th>WORKOUTS</th><th>FIRST LOAD</th><th>LATEST LOAD</th><th>CHANGE</th></tr></thead><tbody>${exercises.map((exercise) => {
+    const change = exercise.changePercent == null ? "—" : `${exercise.changePercent > 0 ? "+" : ""}${exercise.changePercent.toFixed(1)}%`;
+    return `<tr><td>${escapeHtml(exercise.name)}</td><td>${exercise.totalSets}</td><td>${exercise.workoutCount}</td><td>${exercise.firstLoad ?? "—"}</td><td>${exercise.latestLoad ?? "—"}</td><td>${change}</td></tr>`;
+  }).join("")}</tbody></table></div>`;
 }
 function bindFitnessActions() {
   const content = $("#fitness-content");
+  const importButton = $("[data-open-fitnotes]", content);
+  const fileInput = $("#fitnotes-file", content);
+  if (importButton && fileInput) importButton.addEventListener("click", () => fileInput.click());
+  if (fileInput) fileInput.addEventListener("change", async (event) => {
+    const input = event.currentTarget;
+    const file = input.files[0];
+    if (!file) return;
+    try {
+      let payload;
+      try {
+        payload = JSON.parse(await file.text());
+      } catch {
+        throw new Error("Could not read this file as JSON. Choose an unmodified FitNotes .fnw backup.");
+      }
+      const imported = window.fitNotesAnalytics.parseExport(payload);
+      if (!imported.workouts.length) throw new Error("No completed sets were found in this FitNotes backup.");
+      const existingIds = new Set(fitNotesData.workouts.map((workout) => workout.id));
+      const added = imported.workouts.filter((workout) => !existingIds.has(workout.id)).length;
+      const updated = imported.workouts.length - added;
+      const merged = window.fitNotesAnalytics.mergeData(fitNotesData, imported);
+      localStorage.setItem(FITNOTES_KEY, JSON.stringify(merged));
+      fitNotesData = merged;
+      fitNotesLoadError = "";
+      fitNotesError = "";
+      fitNotesStatus = `Imported ${imported.workouts.length} completed workouts (${added} new, ${updated} refreshed). Saved on this browser only.`;
+      if (!fitNotesData.exercises.some((exercise) => exercise.id === selectedExerciseId)) selectedExerciseId = "";
+    } catch (error) {
+      fitNotesError = error.message || "Could not import this FitNotes backup.";
+      fitNotesStatus = "Import failed. Your saved charts were not changed.";
+    } finally {
+      input.value = "";
+      renderFitness();
+    }
+  });
+  const clearButton = $("[data-clear-fitnotes]", content);
+  if (clearButton) clearButton.addEventListener("click", () => {
+    if (!window.confirm("Remove imported FitNotes data from this browser?")) return;
+    try {
+      localStorage.removeItem(FITNOTES_KEY);
+      fitNotesData = window.fitNotesAnalytics.emptyData();
+      fitNotesLoadError = "";
+      fitNotesStatus = "Imported FitNotes data was removed from this browser.";
+      fitNotesError = "";
+      selectedExerciseId = "";
+      renderFitness();
+    } catch (error) {
+      fitNotesError = error.message || "Could not remove saved FitNotes data.";
+      renderFitness();
+    }
+  });
+  const exerciseSelect = $("#exercise-trend-select", content);
+  if (exerciseSelect) exerciseSelect.addEventListener("change", () => {
+    selectedExerciseId = exerciseSelect.value;
+    renderFitness();
+  });
   $$('[data-start-template]').forEach((button) => button.addEventListener("click", () => {
     const index = Number(button.dataset.startTemplate);
     const template = workoutTemplates[index];

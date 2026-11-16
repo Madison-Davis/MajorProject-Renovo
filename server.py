@@ -61,7 +61,7 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if urlsplit(self.path).path != '/api/obsidian/goals':
             # Serve only the dashboard's public assets, never repository files.
-            if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/styles.css', '/compaulo-theme.css'):
+            if urlsplit(self.path).path not in ('/', '/index.html', '/app.js', '/fitnotes-data.js', '/styles.css', '/compaulo-theme.css'):
                 self.send_error(404)
                 return
             return super().do_GET()

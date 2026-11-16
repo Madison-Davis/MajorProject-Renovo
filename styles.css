@@ -186,6 +186,55 @@ a { color: inherit; }
 .progress-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #767676, #e0e0e0); }
 .progress-row strong { color: #d5d5d5; font-size: 8px; text-align: right; }
 .trend-caption { display: flex; justify-content: space-between; gap: 12px; margin-top: 20px; padding-top: 13px; border-top: 1px solid #292929; color: #797979; font-size: 8px; }
+.fitnotes-import-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.fitnotes-import-actions .button-quiet, .fitnotes-import-actions .button-primary { min-height: 34px; font-size: 7px; }
+.fitnotes-file-input { display: none; }
+.fitnotes-import-status { margin: -4px 0 17px; color: #858585; font-size: 8px; line-height: 1.6; }
+.fitnotes-import-error { margin: -10px 0 17px; color: #e2a4a4; font-size: 9px; text-align: left; }
+.fitnotes-empty { display: grid; justify-items: center; gap: 10px; min-height: 250px; align-content: center; border: 1px dashed #353535; border-radius: 12px; padding: 24px; text-align: center; }
+.fitnotes-empty h4 { margin: 0; color: #e6e6e6; font-size: 15px; }
+.fitnotes-empty p { max-width: 430px; margin: 0; color: #898989; font-size: 9px; line-height: 1.8; }
+.fitnotes-empty code { color: #d6d6d6; }
+.fitness-stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.fitness-stat { display: grid; gap: 6px; min-width: 0; border: 1px solid #292929; border-radius: 10px; background: #101010; padding: 12px; }
+.fitness-stat strong { overflow: hidden; color: #eee; font-size: 17px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.fitness-stat:last-child strong { font-size: 10px; }
+.fitness-stat span, .chart-note { color: #777; font-size: 7px; font-weight: 800; letter-spacing: .1em; }
+.fitness-insight-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.fitness-insight-card { min-width: 0; border: 1px solid #292929; border-radius: 12px; background: #101010; padding: 15px; }
+.fitness-insight-wide { grid-column: 1 / -1; }
+.fitness-chart-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 15px; }
+.fitness-chart-heading h4 { margin-top: 5px; color: #e6e6e6; font-size: 13px; letter-spacing: -.025em; }
+.fitness-chart-heading p { margin: 5px 0 0; color: #808080; font-size: 8px; text-align: left; }
+.chart-note { flex: 0 0 auto; margin-top: 2px; text-align: right; }
+.insight-progress-list { gap: 12px; }
+.insight-progress-list .progress-row { grid-template-columns: 90px minmax(30px, 1fr) 40px; gap: 8px; font-size: 8px; }
+.weekly-muscle-list { display: grid; gap: 12px; }
+.weekly-muscle-row { display: grid; grid-template-columns: 90px minmax(30px, 1fr) 35px; align-items: center; gap: 8px; color: #c2c2c2; font-size: 8px; }
+.weekly-muscle-row strong { color: #d5d5d5; font-size: 8px; text-align: right; }
+.fitness-chart-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart-grid-line { stroke: #2b2b2b; stroke-width: 1; }
+.chart-axis-label { fill: #777; font-family: inherit; font-size: 9px; }
+.chart-trend-line { fill: none; stroke: #d8d8d8; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
+.chart-trend-point { fill: #151515; stroke: #f0f0f0; stroke-width: 2; }
+.chart-week-bar { fill: #bdbdbd; }
+.chart-week-bar:hover { fill: #fff; }
+.exercise-select-label { display: grid; gap: 5px; flex: 0 0 min(230px, 45%); color: #777; font-size: 7px; font-weight: 800; letter-spacing: .1em; }
+.exercise-select-label select { width: 100%; min-width: 0; border: 1px solid #383838; border-radius: 7px; background: #171717; padding: 8px; color: #ddd; font: inherit; font-size: 9px; letter-spacing: 0; }
+.chart-empty { display: grid; min-height: 130px; align-content: center; color: #858585; font-size: 9px; text-align: center; }
+.muscle-focus-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.muscle-focus-card { min-width: 0; border: 1px solid #292929; border-radius: 9px; padding: 10px; }
+.muscle-focus-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.muscle-focus-head strong { color: #ddd; font-size: 9px; }
+.muscle-focus-head span { color: #929292; font-size: 8px; white-space: nowrap; }
+.muscle-focus-card ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.muscle-focus-card li { display: flex; justify-content: space-between; gap: 8px; color: #a9a9a9; font-size: 8px; }
+.muscle-focus-card li small { flex: 0 0 auto; color: #707070; font-size: 7px; }
+.exercise-history-wrap { overflow-x: auto; }
+.exercise-history { width: 100%; border-collapse: collapse; text-align: left; }
+.exercise-history th { padding: 8px; color: #777; font-size: 7px; font-weight: 800; letter-spacing: .08em; white-space: nowrap; }
+.exercise-history td { border-top: 1px solid #292929; padding: 9px 8px; color: #c5c5c5; font-size: 8px; }
+.exercise-history td:first-child { color: #e0e0e0; font-weight: 600; }
 .vitality-disclaimer { margin-top: 13px; color: #696969; font-size: 8px; line-height: 1.7; }
 
 .voyage-view { padding-top: 0; }
@@ -326,6 +375,11 @@ a { color: inherit; }
   .fitness-content { padding: 16px; }
   .fitness-layout { grid-template-columns: 1fr; }
   .fitness-pane-head { flex-direction: column; }
+  .fitness-insight-grid { grid-template-columns: 1fr; }
+  .fitness-insight-wide { grid-column: auto; }
+  .fitness-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fitness-chart-heading { flex-wrap: wrap; }
+  .exercise-select-label { flex-basis: 100%; }
   .voyage-title-row { align-items: flex-start; flex-direction: column; padding-top: 34px; }
   .event-controls { grid-template-columns: minmax(0, 1fr) auto; }
   .category-switch { grid-column: 1 / -1; }
@@ -359,6 +413,14 @@ a { color: inherit; }
   .goal-row { font-size: 8px; }
   .fitness-tab { padding: 14px 10px; }
   .fitness-tab span { display: none; }
+  .fitnotes-import-actions { width: 100%; }
+  .fitnotes-import-actions button { flex: 1 1 auto; }
+  .fitness-stat { padding: 10px; }
+  .fitness-stat strong { font-size: 15px; }
+  .fitness-stat:last-child strong { font-size: 9px; }
+  .muscle-focus-grid { grid-template-columns: 1fr; }
+  .insight-progress-list .progress-row, .weekly-muscle-row { grid-template-columns: 78px minmax(25px, 1fr) 36px; gap: 6px; }
+  .fitness-chart-svg { min-height: 145px; }
   .leaflet-map { height: 310px; }
   .map-tools span { display: none; }
   .preview-card { grid-template-columns: 95px minmax(0,1fr); }

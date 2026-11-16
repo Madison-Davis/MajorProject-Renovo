@@ -25,6 +25,13 @@ consecutive Markdown list (`- [x] Done`, `- [ ] Pending`, or `- A goal`).
 Text after the list and other vault notes are excluded. The site never writes
 to your vault. Workout entries remain in browser local storage.
 
+In Renew → Fitness Studio → Insights, import a FitNotes `.fnw` backup to view
+completed-set distribution by muscle group, average sets per week, exercise
+load trends, weekly workout frequency, and your exercise history. Importing
+another backup adds new workouts and refreshes matching workout IDs. Imported
+workout data is stored in this browser only; use **Clear imported data** to
+remove it.
+
 Keep the server running while using the connection. It binds only to your Mac's
 loopback address. A GitHub Pages/static deployment cannot read local Obsidian
 files and will show the connection as offline. Private note contents are read
