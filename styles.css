@@ -212,6 +212,15 @@ a { color: inherit; }
 .weekly-muscle-list { display: grid; gap: 12px; }
 .weekly-muscle-row { display: grid; grid-template-columns: 90px minmax(30px, 1fr) 35px; align-items: center; gap: 8px; color: #c2c2c2; font-size: 8px; }
 .weekly-muscle-row strong { color: #d5d5d5; font-size: 8px; text-align: right; }
+.weekly-timeline { margin-top: 15px; border-top: 1px solid #292929; padding-top: 12px; }
+.weekly-timeline-heading { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; color: #858585; font-size: 7px; letter-spacing: .08em; }
+.weekly-timeline-heading strong { color: #bbb; }
+.weekly-timeline-scroll { overflow-x: auto; }
+.weekly-timeline-table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 2px; color: #aaa; font-size: 7px; font-variant-numeric: tabular-nums; }
+.weekly-timeline-table th { min-width: 34px; padding: 5px 2px; color: #777; font-weight: 600; text-align: center; white-space: nowrap; }
+.weekly-timeline-table th:first-child { position: sticky; left: 0; z-index: 1; min-width: 92px; background: #101010; text-align: left; }
+.weekly-timeline-table td { min-width: 34px; border-radius: 4px; background: rgba(215, 215, 215, var(--cell-strength, 0)); color: #eee; padding: 5px 2px; text-align: center; }
+.weekly-timeline-table td:not(.has-sets) { color: #555; }
 .fitness-chart-svg { display: block; width: 100%; height: auto; overflow: visible; }
 .chart-grid-line { stroke: #2b2b2b; stroke-width: 1; }
 .chart-axis-label { fill: #777; font-family: inherit; font-size: 9px; }
@@ -221,6 +230,24 @@ a { color: inherit; }
 .chart-week-bar:hover { fill: #fff; }
 .exercise-select-label { display: grid; gap: 5px; flex: 0 0 min(230px, 45%); color: #777; font-size: 7px; font-weight: 800; letter-spacing: .1em; }
 .exercise-select-label select { width: 100%; min-width: 0; border: 1px solid #383838; border-radius: 7px; background: #171717; padding: 8px; color: #ddd; font: inherit; font-size: 9px; letter-spacing: 0; }
+.progression-tools { display: grid; justify-items: end; gap: 8px; }
+.progression-mode-switch { display: inline-flex; gap: 2px; border: 1px solid #303030; border-radius: 8px; background: #0c0c0c; padding: 3px; }
+.progression-mode-switch button { border: 0; border-radius: 6px; background: transparent; padding: 7px 9px; color: #888; font-size: 7px; font-weight: 800; letter-spacing: .06em; cursor: pointer; white-space: nowrap; }
+.progression-mode-switch button:hover, .progression-mode-switch button.active { background: #292929; color: #eee; }
+.progression-exercise-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(205px, 1fr)); gap: 7px; }
+.progression-group-list { display: grid; gap: 16px; }
+.progression-group { display: grid; gap: 8px; }
+.progression-group-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; border-bottom: 1px solid #292929; padding-bottom: 7px; }
+.progression-group-heading h5 { color: #dedede; font-size: 10px; }
+.progression-group-heading span { color: #858585; font-size: 8px; }
+.progression-exercise-card { min-width: 0; border: 1px solid #2b2b2b; border-radius: 9px; background: #0c0c0c; padding: 9px; }
+.progression-exercise-heading, .progression-exercise-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.progression-exercise-heading strong { overflow: hidden; color: #ddd; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.progression-exercise-heading span, .progression-exercise-foot { color: #777; font-size: 7px; }
+.progression-exercise-heading span { flex: 0 0 auto; }
+.exercise-sparkline { display: block; width: 100%; height: auto; margin: 7px 0; }
+.exercise-sparkline-empty { display: grid; height: 38px; align-content: center; margin: 7px 0; color: #777; font-size: 8px; text-align: center; }
+.progression-exercise-foot strong { color: #aaa; font-size: 7px; font-weight: 600; }
 .chart-empty { display: grid; min-height: 130px; align-content: center; color: #858585; font-size: 9px; text-align: center; }
 .muscle-focus-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
 .muscle-focus-card { min-width: 0; border: 1px solid #292929; border-radius: 9px; padding: 10px; }
@@ -230,11 +257,6 @@ a { color: inherit; }
 .muscle-focus-card ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .muscle-focus-card li { display: flex; justify-content: space-between; gap: 8px; color: #a9a9a9; font-size: 8px; }
 .muscle-focus-card li small { flex: 0 0 auto; color: #707070; font-size: 7px; }
-.exercise-history-wrap { overflow-x: auto; }
-.exercise-history { width: 100%; border-collapse: collapse; text-align: left; }
-.exercise-history th { padding: 8px; color: #777; font-size: 7px; font-weight: 800; letter-spacing: .08em; white-space: nowrap; }
-.exercise-history td { border-top: 1px solid #292929; padding: 9px 8px; color: #c5c5c5; font-size: 8px; }
-.exercise-history td:first-child { color: #e0e0e0; font-weight: 600; }
 .vitality-disclaimer { margin-top: 13px; color: #696969; font-size: 8px; line-height: 1.7; }
 
 .voyage-view { padding-top: 0; }

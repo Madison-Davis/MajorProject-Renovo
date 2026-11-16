@@ -119,10 +119,11 @@
     const exerciseMap = new Map();
     const weeklyMap = new Map();
     let totalSets = 0;
+    let totalMuscleSets = 0;
 
     for (const workout of workouts) {
       const weekStart = isoWeekStart(workout.date);
-      const week = weeklyMap.get(weekStart) || { weekStart, workouts: 0, sets: 0 };
+      const week = weeklyMap.get(weekStart) || { weekStart, workouts: 0, sets: 0, muscleSets: new Map() };
       week.workouts += 1;
       weeklyMap.set(weekStart, week);
 
@@ -146,7 +147,7 @@
         exerciseMap.set(entry.id, exercise);
 
         const muscleIds = entry.categoryIds.length ? entry.categoryIds : ["__uncategorized__"];
-        const credit = entry.sets.length / muscleIds.length;
+        const credit = entry.sets.length;
         for (const muscleId of muscleIds) {
           const muscle = muscleMap.get(muscleId) || {
             id: muscleId,
@@ -158,6 +159,8 @@
           muscle.exercises.set(entry.id, (muscle.exercises.get(entry.id) || 0) + credit);
           exercise.muscleIds.add(muscleId);
           muscleMap.set(muscleId, muscle);
+          week.muscleSets.set(muscleId, (week.muscleSets.get(muscleId) || 0) + credit);
+          totalMuscleSets += credit;
         }
 
         totalSets += entry.sets.length;
@@ -170,7 +173,7 @@
         id: muscle.id,
         name: muscle.name,
         sets: muscle.sets,
-        share: totalSets ? (muscle.sets / totalSets) * 100 : 0,
+        share: totalMuscleSets ? (muscle.sets / totalMuscleSets) * 100 : 0,
         setsPerWeek: weeks ? muscle.sets / weeks : 0,
         exercises: [...muscle.exercises.entries()]
           .map(([id, sets]) => ({
@@ -186,17 +189,13 @@
     const exercises = [...exerciseMap.values()]
       .map((exercise) => {
         const points = [...exercise.pointsByWorkout.values()].sort((a, b) => a.date.localeCompare(b.date));
-        const firstLoad = points[0]?.load ?? null;
-        const latestLoad = points[points.length - 1]?.load ?? null;
         return {
           id: exercise.id,
           name: exercise.name,
           totalSets: exercise.totalSets,
           workoutCount: exercise.workoutIds.size,
+          muscleIds: [...exercise.muscleIds],
           points,
-          firstLoad,
-          latestLoad,
-          changePercent: firstLoad > 0 && latestLoad != null ? ((latestLoad - firstLoad) / firstLoad) * 100 : null,
         };
       })
       .sort((a, b) => b.totalSets - a.totalSets || a.name.localeCompare(b.name));
@@ -208,7 +207,16 @@
       const cursor = new Date(`${isoWeekStart(firstDate)}T12:00:00`);
       while (localDateKey(cursor) <= lastWeek) {
         const weekStart = localDateKey(cursor);
-        weeklyActivity.push(activityByWeek.get(weekStart) || { weekStart, workouts: 0, sets: 0 });
+        const week = activityByWeek.get(weekStart);
+        weeklyActivity.push({
+          weekStart,
+          workouts: week?.workouts || 0,
+          sets: week?.sets || 0,
+          muscleSets: Object.fromEntries(muscles.map((muscle) => [
+            muscle.id,
+            week?.muscleSets.get(muscle.id) || 0,
+          ])),
+        });
         cursor.setDate(cursor.getDate() + 7);
       }
     }

@@ -27,10 +27,13 @@ to your vault. Workout entries remain in browser local storage.
 
 In Renew → Fitness Studio → Insights, import a FitNotes `.fnw` backup to view
 completed-set distribution by muscle group, average sets per week, exercise
-load trends, weekly workout frequency, and your exercise history. Importing
+load trends, weekly sets by muscle group, and weekly workout frequency. Importing
 another backup adds new workouts and refreshes matching workout IDs. Imported
 workout data is stored in this browser only; use **Clear imported data** to
-remove it.
+remove it. Exercises assigned to multiple muscle groups count in each group;
+group percentages are normalized across those group assignments. Exercises
+without completed sets are omitted. Exercise progression can be shown for one
+exercise, all exercises, or grouped by muscle.
 
 Keep the server running while using the connection. It binds only to your Mac's
 loopback address. A GitHub Pages/static deployment cannot read local Obsidian

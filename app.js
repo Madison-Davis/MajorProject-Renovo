@@ -76,6 +76,7 @@ let monthOffset = 0;
 let monthLocked = false;
 let fitnessView = "library";
 let selectedExerciseId = "";
+let progressionView = "selected";
 let fitNotesStatus = fitNotesData.workouts.length
   ? "Loaded saved FitNotes data from this browser."
   : "Import a FitNotes .fnw backup to create your training charts.";
@@ -295,31 +296,45 @@ function renderResults() {
   const status = fitNotesLoadError || fitNotesStatus;
   return `<div class="fitness-pane-head"><div><div class="eyebrow">YOUR FITNOTES TRAINING</div><h3>Strength, over time</h3><p>Charts use completed sets from your imported FitNotes backups. Your data stays in this browser.</p></div><div class="fitnotes-import-actions"><input class="fitnotes-file-input" id="fitnotes-file" type="file" accept=".fnw,.json,application/json" /><button class="button-primary" type="button" data-open-fitnotes>IMPORT FITNOTES BACKUP <span>↥</span></button>${fitNotesData.workouts.length ? `<button class="button-quiet" type="button" data-clear-fitnotes> CLEAR IMPORTED DATA</button>` : ""}</div></div>
     <div class="fitnotes-import-status" role="status">${escapeHtml(status)}</div>${fitNotesError ? `<p class="fitnotes-import-error" role="alert">${escapeHtml(fitNotesError)}</p>` : ""}
-    ${summary.workoutCount ? renderFitnessInsights(summary, selectedExercise) : `<div class="fitnotes-empty"><span class="preview-orbit">◌</span><h4>Your training will show up here.</h4><p>Import a FitNotes <code>.fnw</code> backup to see your muscle-group split, weekly sets, exercise progress, and training history.</p></div>`}`;
+    ${summary.workoutCount ? renderFitnessInsights(summary, selectedExercise) : `<div class="fitnotes-empty"><span class="preview-orbit">◌</span><h4>Your training will show up here.</h4><p>Import a FitNotes <code>.fnw</code> backup to see your muscle-group split, weekly sets, and exercise progress.</p></div>`}`;
 }
 function renderFitnessInsights(summary, selectedExercise) {
   const range = `${formatDate(summary.firstDate, { month: "short", day: "numeric", year: "numeric" })} – ${formatDate(summary.lastDate, { month: "short", day: "numeric", year: "numeric" })}`;
   const exerciseOptions = summary.exercises.map((exercise) =>
     `<option value="${escapeHtml(exercise.id)}" ${exercise.id === selectedExercise?.id ? "selected" : ""}>${escapeHtml(exercise.name)}</option>`
   ).join("");
+  const progressionChart = progressionView === "all"
+    ? renderAllProgressions(summary.exercises)
+    : progressionView === "muscle"
+      ? renderProgressionsByMuscle(summary.muscles, summary.exercises)
+      : renderExerciseTrendChart(selectedExercise);
   return `<div class="fitness-stat-grid"><div class="fitness-stat"><strong>${summary.workoutCount}</strong><span>WORKOUTS</span></div><div class="fitness-stat"><strong>${summary.totalSets}</strong><span>COMPLETED SETS</span></div><div class="fitness-stat"><strong>${summary.exerciseCount}</strong><span>EXERCISES</span></div><div class="fitness-stat"><strong>${escapeHtml(range)}</strong><span>DATE RANGE</span></div></div>
     <div class="fitness-insight-grid">
-      <article class="fitness-insight-card"><div class="fitness-chart-heading"><div><div class="eyebrow">MUSCLE GROUPS</div><h4>Share of training</h4></div><span class="chart-note">COMPLETED SETS</span></div>${renderMuscleShareChart(summary.muscles)}</article>
-      <article class="fitness-insight-card"><div class="fitness-chart-heading"><div><div class="eyebrow">WEEKLY VOLUME</div><h4>Average sets per week</h4></div><span class="chart-note">${summary.weeks.toFixed(1)} WEEKS TRACKED</span></div>${renderWeeklyMuscleChart(summary.muscles)}</article>
-      <article class="fitness-insight-card fitness-insight-wide"><div class="fitness-chart-heading"><div><div class="eyebrow">EXERCISE PROGRESSION</div><h4>Best logged load by workout</h4><p>Choose an exercise to follow its working-load trend.</p></div><label class="exercise-select-label">EXERCISE<select id="exercise-trend-select">${exerciseOptions}</select></label></div>${renderExerciseTrendChart(selectedExercise)}</article>
+      <article class="fitness-insight-card"><div class="fitness-chart-heading"><div><div class="eyebrow">MUSCLE GROUPS</div><h4>Share of training</h4></div><span class="chart-note">TAGGED SETS</span></div>${renderMuscleShareChart(summary.muscles)}</article>
+      <article class="fitness-insight-card"><div class="fitness-chart-heading"><div><div class="eyebrow">WEEKLY VOLUME</div><h4>Average sets per week</h4><p>Multi-muscle exercises count in each tagged group.</p></div><span class="chart-note">${summary.weeks.toFixed(1)} WEEKS TRACKED</span></div>${renderWeeklyMuscleChart(summary.muscles)}${renderWeeklyMuscleTimeline(summary.muscles, summary.weeklyActivity)}</article>
+      <article class="fitness-insight-card fitness-insight-wide"><div class="fitness-chart-heading"><div><div class="eyebrow">EXERCISE PROGRESSION</div><h4>Best logged load by workout</h4><p>Only exercises with completed sets are shown.</p></div><div class="progression-tools"><div class="progression-mode-switch" role="group" aria-label="Exercise progression display">${[["selected", "ONE"], ["all", "SHOW ALL"], ["muscle", "BY MUSCLE GROUP"]].map(([mode, label]) => `<button type="button" data-progression-view="${mode}" class="${progressionView === mode ? "active" : ""}" aria-pressed="${progressionView === mode}">${label}</button>`).join("")}</div>${progressionView === "selected" ? `<label class="exercise-select-label">EXERCISE<select id="exercise-trend-select">${exerciseOptions}</select></label>` : ""}</div></div>${progressionChart}</article>
       <article class="fitness-insight-card fitness-insight-wide"><div class="fitness-chart-heading"><div><div class="eyebrow">CONSISTENCY</div><h4>Workouts per week</h4><p>Completed sessions across your imported history.</p></div><span class="chart-note">${summary.weeklyActivity.length > 12 ? "LATEST 12 WEEKS · MONDAY START" : "WEEK STARTS MONDAY"}</span></div>${renderWeeklyWorkoutChart(summary.weeklyActivity)}</article>
-      <article class="fitness-insight-card fitness-insight-wide"><div class="fitness-chart-heading"><div><div class="eyebrow">MOVEMENT MAP</div><h4>Exercises for each muscle group</h4><p>Multi-tagged exercises split their sets evenly across FitNotes categories.</p></div></div>${renderMuscleFocusList(summary.muscles)}</article>
-      <article class="fitness-insight-card fitness-insight-wide"><div class="fitness-chart-heading"><div><div class="eyebrow">EXERCISE HISTORY</div><h4>What you’ve trained</h4><p>Load change compares the first and latest workout with a recorded load.</p></div></div>${renderExerciseHistory(summary.exercises)}</article>
+      <article class="fitness-insight-card fitness-insight-wide"><div class="fitness-chart-heading"><div><div class="eyebrow">MOVEMENT MAP</div><h4>Exercises for each muscle group</h4><p>Exercises tagged for multiple groups count in each one.</p></div></div>${renderMuscleFocusList(summary.muscles)}</article>
     </div>`;
 }
 function renderMuscleShareChart(muscles) {
   if (!muscles.length) return `<p class="chart-empty">No categorized sets in this export.</p>`;
-  return `<div class="progress-list insight-progress-list">${muscles.map((muscle) => `<div class="progress-row"><span>${escapeHtml(muscle.name)}</span><span class="progress-track"><i style="width:${Math.min(100, muscle.share)}%"></i></span><strong>${muscle.share.toFixed(1)}%</strong></div>`).join("")}</div><div class="trend-caption"><span>Share of all completed sets</span><span>${muscles.length} GROUPS</span></div>`;
+  return `<div class="progress-list insight-progress-list">${muscles.map((muscle) => `<div class="progress-row"><span>${escapeHtml(muscle.name)}</span><span class="progress-track"><i style="width:${Math.min(100, muscle.share)}%"></i></span><strong>${muscle.share.toFixed(1)}%</strong></div>`).join("")}</div><div class="trend-caption"><span>Share of tagged muscle-group sets</span><span>${muscles.length} GROUPS</span></div>`;
 }
 function renderWeeklyMuscleChart(muscles) {
   if (!muscles.length) return `<p class="chart-empty">Import workouts with completed sets to see weekly volume.</p>`;
   const maximum = Math.max(...muscles.map((muscle) => muscle.setsPerWeek), 1);
   return `<div class="weekly-muscle-list">${muscles.map((muscle) => `<div class="weekly-muscle-row"><span>${escapeHtml(muscle.name)}</span><span class="progress-track"><i style="width:${(muscle.setsPerWeek / maximum) * 100}%"></i></span><strong>${muscle.setsPerWeek.toFixed(1)}</strong></div>`).join("")}</div><div class="trend-caption"><span>Average completed sets per week</span><span>FULL DATE RANGE</span></div>`;
+}
+function renderWeeklyMuscleTimeline(muscles, weeklyActivity) {
+  const weeks = weeklyActivity;
+  if (!muscles.length || !weeks.length) return "";
+  const maximum = Math.max(1, ...weeks.flatMap((week) => muscles.map((muscle) => week.muscleSets[muscle.id] || 0)));
+  return `<div class="weekly-timeline"><div class="weekly-timeline-heading"><strong>ACTUAL SETS EACH WEEK</strong><span>FULL DATE RANGE · ${weeks.length} WEEKS</span></div><div class="weekly-timeline-scroll"><table class="weekly-timeline-table"><thead><tr><th scope="col">MUSCLE GROUP</th>${weeks.map((week) => `<th scope="col" title="Week starting ${escapeHtml(formatDate(week.weekStart))}">${escapeHtml(formatDate(week.weekStart, { month: "short", day: "numeric" }))}</th>`).join("")}</tr></thead><tbody>${muscles.map((muscle) => `<tr><th scope="row">${escapeHtml(muscle.name)}</th>${weeks.map((week) => {
+    const sets = week.muscleSets[muscle.id] || 0;
+    const strength = sets ? (0.18 + (sets / maximum) * 0.62).toFixed(2) : "0";
+    return `<td class="${sets ? "has-sets" : ""}" style="--cell-strength:${strength}" title="${escapeHtml(muscle.name)}: ${sets} ${sets === 1 ? "set" : "sets"} · week of ${escapeHtml(formatDate(week.weekStart))}">${sets}</td>`;
+  }).join("")}</tr>`).join("")}</tbody></table></div></div>`;
 }
 function renderExerciseTrendChart(exercise) {
   if (!exercise?.points.length) return `<div class="chart-empty">No working loads recorded for this exercise yet.</div>`;
@@ -349,6 +364,46 @@ function renderExerciseTrendChart(exercise) {
     <text x="${padding.left}" y="11" class="chart-axis-label">LOAD</text>
   </svg><div class="trend-caption"><span>${escapeHtml(exercise.name)} · ${points.length} workouts with a recorded load</span><span>${points[0].load} → ${points[points.length - 1].load}</span></div>`;
 }
+function renderAllProgressions(exercises) {
+  if (!exercises.length) return `<p class="chart-empty">No trained exercises found.</p>`;
+  return `<div class="progression-exercise-grid">${exercises.map(renderProgressionExerciseCard).join("")}</div>`;
+}
+function renderProgressionsByMuscle(muscles, exercises) {
+  if (!exercises.length) return `<p class="chart-empty">No trained exercises found.</p>`;
+  const exerciseById = new Map(exercises.map((exercise) => [exercise.id, exercise]));
+  return `<div class="progression-group-list">${muscles.map((muscle) => {
+    const groupExercises = muscle.exercises.map((entry) => exerciseById.get(entry.id)).filter(Boolean);
+    if (!groupExercises.length) return "";
+    return `<section class="progression-group"><div class="progression-group-heading"><h5>${escapeHtml(muscle.name)}</h5><span>${muscle.setsPerWeek.toFixed(1)} sets / wk</span></div><div class="progression-exercise-grid">${groupExercises.map(renderProgressionExerciseCard).join("")}</div></section>`;
+  }).join("")}</div>`;
+}
+function renderProgressionExerciseCard(exercise) {
+  const points = exercise.points;
+  const trend = points.length
+    ? `<svg class="exercise-sparkline" viewBox="0 0 280 72" role="img" aria-label="${escapeHtml(exercise.name)} load trend">${renderSparkline(points)}</svg>`
+    : `<div class="exercise-sparkline-empty">No load recorded</div>`;
+  const loadRange = points.length ? `${points[0].load} → ${points[points.length - 1].load}` : "—";
+  const dateRange = points.length
+    ? `${formatDate(points[0].date, { month: "short", day: "numeric" })} – ${formatDate(points[points.length - 1].date, { month: "short", day: "numeric" })}`
+    : `${exercise.workoutCount} ${exercise.workoutCount === 1 ? "workout" : "workouts"}`;
+  return `<article class="progression-exercise-card"><div class="progression-exercise-heading"><strong>${escapeHtml(exercise.name)}</strong><span>${exercise.workoutCount} ${exercise.workoutCount === 1 ? "workout" : "workouts"}</span></div>${trend}<div class="progression-exercise-foot"><span>${dateRange}</span><strong>${loadRange}</strong></div></article>`;
+}
+function renderSparkline(points) {
+  const width = 280;
+  const height = 72;
+  const padding = 6;
+  const values = points.map((point) => point.load);
+  let minimum = Math.min(...values);
+  let maximum = Math.max(...values);
+  if (minimum === maximum) {
+    minimum = Math.max(0, minimum - 1);
+    maximum += 1;
+  }
+  const x = (index) => points.length === 1 ? width / 2 : padding + (index / (points.length - 1)) * (width - padding * 2);
+  const y = (value) => padding + ((maximum - value) / (maximum - minimum)) * (height - padding * 2);
+  const line = points.map((point, index) => `${x(index)},${y(point.load)}`).join(" ");
+  return `<polyline points="${line}" class="chart-trend-line"></polyline>${points.map((point, index) => `<circle cx="${x(index)}" cy="${y(point.load)}" r="2.5" class="chart-trend-point"><title>${escapeHtml(formatDate(point.date, { month: "short", day: "numeric", year: "numeric" }))}: ${point.load}</title></circle>`).join("")}`;
+}
 function renderWeeklyWorkoutChart(activity) {
   if (!activity.length) return `<p class="chart-empty">No completed workouts to chart yet.</p>`;
   const weeks = activity.slice(-12);
@@ -374,12 +429,6 @@ function renderWeeklyWorkoutChart(activity) {
 function renderMuscleFocusList(muscles) {
   if (!muscles.length) return `<p class="chart-empty">No exercise focus data found in this export.</p>`;
   return `<div class="muscle-focus-grid">${muscles.map((muscle) => `<section class="muscle-focus-card"><div class="muscle-focus-head"><strong>${escapeHtml(muscle.name)}</strong><span>${muscle.setsPerWeek.toFixed(1)} sets / wk</span></div><ul>${muscle.exercises.map((exercise) => `<li><span>${escapeHtml(exercise.name)}</span><small>${exercise.workouts} ${exercise.workouts === 1 ? "workout" : "workouts"}</small></li>`).join("")}</ul></section>`).join("")}</div>`;
-}
-function renderExerciseHistory(exercises) {
-  return `<div class="exercise-history-wrap"><table class="exercise-history"><thead><tr><th>EXERCISE</th><th>SETS</th><th>WORKOUTS</th><th>FIRST LOAD</th><th>LATEST LOAD</th><th>CHANGE</th></tr></thead><tbody>${exercises.map((exercise) => {
-    const change = exercise.changePercent == null ? "—" : `${exercise.changePercent > 0 ? "+" : ""}${exercise.changePercent.toFixed(1)}%`;
-    return `<tr><td>${escapeHtml(exercise.name)}</td><td>${exercise.totalSets}</td><td>${exercise.workoutCount}</td><td>${exercise.firstLoad ?? "—"}</td><td>${exercise.latestLoad ?? "—"}</td><td>${change}</td></tr>`;
-  }).join("")}</tbody></table></div>`;
 }
 function bindFitnessActions() {
   const content = $("#fitness-content");
@@ -438,6 +487,10 @@ function bindFitnessActions() {
     selectedExerciseId = exerciseSelect.value;
     renderFitness();
   });
+  $$("[data-progression-view]", content).forEach((button) => button.addEventListener("click", () => {
+    progressionView = button.dataset.progressionView;
+    renderFitness();
+  }));
   $$('[data-start-template]').forEach((button) => button.addEventListener("click", () => {
     const index = Number(button.dataset.startTemplate);
     const template = workoutTemplates[index];

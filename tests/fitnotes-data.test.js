@@ -81,13 +81,19 @@ test("merges refreshed workout IDs without duplicating history", () => {
   assert.equal(merged.workouts.find((workout) => workout.id === "workout-2").name, "Upper updated");
 });
 
-test("summarizes load trends and evenly attributes multi-tagged sets", () => {
+test("summarizes load trends and counts multi-tagged sets in each muscle group", () => {
   const summary = analytics.summarize(analytics.parseExport(exportFixture()));
   const press = summary.exercises.find((exercise) => exercise.id === "press");
+  const chest = summary.muscles.find((muscle) => muscle.name === "Chest");
+  const back = summary.muscles.find((muscle) => muscle.name === "Back");
   assert.equal(summary.workoutCount, 2);
   assert.equal(summary.totalSets, 4);
   assert.equal(press.points.length, 2);
-  assert.equal(press.changePercent, 25);
+  assert.deepEqual(Array.from(press.muscleIds).sort(), ["back", "chest"]);
+  assert.equal(chest.sets, 3);
+  assert.equal(back.sets, 4);
+  assert.ok(chest.exercises.some((exercise) => exercise.id === "press"));
+  assert.ok(back.exercises.some((exercise) => exercise.id === "press"));
   assert.equal(summary.muscles.reduce((total, muscle) => total + muscle.share, 0), 100);
 });
 
@@ -96,6 +102,15 @@ test("keeps zero-workout weeks in weekly activity", () => {
   payload.Data[0].WorkoutInstances[1].StartTime = "2026-01-26T12:00:00Z";
   const summary = analytics.summarize(analytics.parseExport(payload));
   assert.deepEqual(Array.from(summary.weeklyActivity, (week) => week.workouts), [1, 0, 0, 1]);
+  assert.equal(summary.weeklyActivity[1].muscleSets.chest, 0);
+});
+
+test("reports actual weekly sets for each muscle group", () => {
+  const summary = analytics.summarize(analytics.parseExport(exportFixture()));
+  assert.equal(summary.weeklyActivity[0].muscleSets.chest, 2);
+  assert.equal(summary.weeklyActivity[0].muscleSets.back, 3);
+  assert.equal(summary.weeklyActivity[1].muscleSets.chest, 1);
+  assert.equal(summary.weeklyActivity[1].muscleSets.back, 1);
 });
 
 test("counts an exercise once per workout even if it appears in multiple supersets", () => {
@@ -105,6 +120,19 @@ test("counts an exercise once per workout even if it appears in multiple superse
   });
   const summary = analytics.summarize(analytics.parseExport(payload));
   assert.equal(summary.exercises.find((exercise) => exercise.id === "press").workoutCount, 2);
+});
+
+test("excludes exercises and muscle groups with no completed sets", () => {
+  const payload = exportFixture();
+  payload.Data[0].Categories.push({ Id: "triceps", Name: "Triceps" });
+  payload.Data[0].ExerciseDefinitions.push({
+    Id: "unused",
+    Name: "Never performed",
+    CategoryIds: ["triceps"],
+  });
+  const summary = analytics.summarize(analytics.parseExport(payload));
+  assert.equal(summary.exercises.some((exercise) => exercise.id === "unused"), false);
+  assert.equal(summary.muscles.some((muscle) => muscle.name === "Triceps"), false);
 });
 
 test("rejects files that are not FitNotes exports", () => {
