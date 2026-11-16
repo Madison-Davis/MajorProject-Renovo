@@ -5,7 +5,6 @@ const MAP_REGIONS = {
   sarasota: { label: "Sarasota, FL", center: [27.3364, -82.5307], zoom: 12 },
   "bay-area": { label: "San Francisco Bay Area", center: [37.76, -122.34], zoom: 9.5 },
 };
-
 const seedEvents = [
   { id: "seed-1", title: "A slow morning at Project Coffee", category: "restaurant", date: "2026-08-16", region: "sarasota", lat: 27.3364, lng: -82.5307, location: "Downtown Sarasota", description: "Coffee, a window seat, and nowhere to be in a hurry. A little reminder to leave some breathing room in the weekend.", images: [], links: [], seed: true },
   { id: "seed-8", title: "A late-summer gallery afternoon", category: "event", date: "2026-08-29", region: "sarasota", lat: 27.3425, lng: -82.5483, location: "Towles Court, Sarasota", description: "A sample city memory to show how event pins appear in the August starting view. Replace this starter entry with one of your own.", images: [], links: [], seed: true },
@@ -76,6 +75,7 @@ let monthOffset = 0;
 let monthLocked = false;
 let fitnessView = "library";
 let selectedExerciseId = "";
+let selectedMuscleId = "";
 let progressionView = "selected";
 let fitNotesStatus = fitNotesData.workouts.length
   ? "Loaded saved FitNotes data from this browser."
@@ -293,26 +293,37 @@ function renderResults() {
     summary.exercises.find((exercise) => exercise.points.length) ||
     summary.exercises[0];
   if (selectedExercise) selectedExerciseId = selectedExercise.id;
+  const selectedMuscle = summary.muscles.find((muscle) => muscle.id === selectedMuscleId) || summary.muscles[0];
+  if (selectedMuscle) selectedMuscleId = selectedMuscle.id;
   const status = fitNotesLoadError || fitNotesStatus;
   return `<div class="fitness-pane-head"><div><div class="eyebrow">YOUR FITNOTES TRAINING</div><h3>Strength, over time</h3><p>Charts use completed sets from your imported FitNotes backups. Your data stays in this browser.</p></div><div class="fitnotes-import-actions"><input class="fitnotes-file-input" id="fitnotes-file" type="file" accept=".fnw,.json,application/json" /><button class="button-primary" type="button" data-open-fitnotes>IMPORT FITNOTES BACKUP <span>↥</span></button>${fitNotesData.workouts.length ? `<button class="button-quiet" type="button" data-clear-fitnotes> CLEAR IMPORTED DATA</button>` : ""}</div></div>
     <div class="fitnotes-import-status" role="status">${escapeHtml(status)}</div>${fitNotesError ? `<p class="fitnotes-import-error" role="alert">${escapeHtml(fitNotesError)}</p>` : ""}
-    ${summary.workoutCount ? renderFitnessInsights(summary, selectedExercise) : `<div class="fitnotes-empty"><span class="preview-orbit">◌</span><h4>Your training will show up here.</h4><p>Import a FitNotes <code>.fnw</code> backup to see your muscle-group split, weekly sets, and exercise progress.</p></div>`}`;
+    ${summary.workoutCount ? renderFitnessInsights(summary, selectedExercise, selectedMuscle) : `<div class="fitnotes-empty"><span class="preview-orbit">◌</span><h4>Your training will show up here.</h4><p>Import a FitNotes <code>.fnw</code> backup to see your muscle-group split, weekly sets, and exercise progress.</p></div>`}`;
 }
-function renderFitnessInsights(summary, selectedExercise) {
+function renderFitnessInsights(summary, selectedExercise, selectedMuscle) {
   const range = `${formatDate(summary.firstDate, { month: "short", day: "numeric", year: "numeric" })} – ${formatDate(summary.lastDate, { month: "short", day: "numeric", year: "numeric" })}`;
   const exerciseOptions = summary.exercises.map((exercise) =>
     `<option value="${escapeHtml(exercise.id)}" ${exercise.id === selectedExercise?.id ? "selected" : ""}>${escapeHtml(exercise.name)}</option>`
   ).join("");
+  const muscleOptions = summary.muscles.map((muscle) =>
+    `<option value="${escapeHtml(muscle.id)}" ${muscle.id === selectedMuscle?.id ? "selected" : ""}>${escapeHtml(muscle.name)}</option>`
+  ).join("");
   const progressionChart = progressionView === "all"
-    ? renderAllProgressions(summary.exercises)
+    ? renderMultiExerciseTrendChart(summary.exercises)
     : progressionView === "muscle"
-      ? renderProgressionsByMuscle(summary.muscles, summary.exercises)
+      ? renderMultiExerciseTrendChart(selectedMuscle.exercises.map((entry) => summary.exercises.find((exercise) => exercise.id === entry.id)).filter(Boolean))
       : renderExerciseTrendChart(selectedExercise);
+  const progressionDescription = progressionView === "selected"
+    ? "Choose an exercise to see its logged load trend."
+    : progressionView === "muscle"
+      ? "One chart for all trained exercises in the selected group; multi-tagged exercises appear in each group."
+      : "All trained exercises on one chart, normalized to their first logged load.";
   return `<div class="fitness-stat-grid"><div class="fitness-stat"><strong>${summary.workoutCount}</strong><span>WORKOUTS</span></div><div class="fitness-stat"><strong>${summary.totalSets}</strong><span>COMPLETED SETS</span></div><div class="fitness-stat"><strong>${summary.exerciseCount}</strong><span>EXERCISES</span></div><div class="fitness-stat"><strong>${escapeHtml(range)}</strong><span>DATE RANGE</span></div></div>
     <div class="fitness-insight-grid">
       <article class="fitness-insight-card"><div class="fitness-chart-heading"><div><div class="eyebrow">MUSCLE GROUPS</div><h4>Share of training</h4></div><span class="chart-note">TAGGED SETS</span></div>${renderMuscleShareChart(summary.muscles)}</article>
-      <article class="fitness-insight-card"><div class="fitness-chart-heading"><div><div class="eyebrow">WEEKLY VOLUME</div><h4>Average sets per week</h4><p>Multi-muscle exercises count in each tagged group.</p></div><span class="chart-note">${summary.weeks.toFixed(1)} WEEKS TRACKED</span></div>${renderWeeklyMuscleChart(summary.muscles)}${renderWeeklyMuscleTimeline(summary.muscles, summary.weeklyActivity)}</article>
-      <article class="fitness-insight-card fitness-insight-wide"><div class="fitness-chart-heading"><div><div class="eyebrow">EXERCISE PROGRESSION</div><h4>Best logged load by workout</h4><p>Only exercises with completed sets are shown.</p></div><div class="progression-tools"><div class="progression-mode-switch" role="group" aria-label="Exercise progression display">${[["selected", "ONE"], ["all", "SHOW ALL"], ["muscle", "BY MUSCLE GROUP"]].map(([mode, label]) => `<button type="button" data-progression-view="${mode}" class="${progressionView === mode ? "active" : ""}" aria-pressed="${progressionView === mode}">${label}</button>`).join("")}</div>${progressionView === "selected" ? `<label class="exercise-select-label">EXERCISE<select id="exercise-trend-select">${exerciseOptions}</select></label>` : ""}</div></div>${progressionChart}</article>
+      <article class="fitness-insight-card"><div class="fitness-chart-heading"><div><div class="eyebrow">WEEKLY VOLUME</div><h4>Average sets per week</h4><p>Multi-muscle exercises count in each tagged group.</p></div><span class="chart-note">${summary.weeks.toFixed(1)} WEEKS TRACKED</span></div>${renderWeeklyMuscleChart(summary.muscles)}</article>
+      <article class="fitness-insight-card fitness-insight-wide"><div class="fitness-chart-heading"><div><div class="eyebrow">WEEKLY VOLUME TIMELINE</div><h4>Actual sets each week</h4><p>Weekly set counts for each muscle group across the imported date range.</p></div></div>${renderWeeklyMuscleTimeline(summary.muscles, summary.weeklyActivity)}</article>
+      <article class="fitness-insight-card fitness-insight-wide"><div class="fitness-chart-heading"><div><div class="eyebrow">EXERCISE PROGRESSION</div><h4>${progressionView === "selected" ? "Best logged load by workout" : "Exercise load change over time"}</h4><p>${progressionDescription}</p></div><div class="progression-tools"><div class="progression-mode-switch" role="group" aria-label="Exercise progression display">${[["selected", "ONE EXERCISE"], ["all", "SHOW ALL"], ["muscle", "BY MUSCLE GROUP"]].map(([mode, label]) => `<button type="button" data-progression-view="${mode}" class="${progressionView === mode ? "active" : ""}" aria-pressed="${progressionView === mode}">${label}</button>`).join("")}</div>${progressionView === "selected" ? `<label class="exercise-select-label">EXERCISE<select id="exercise-trend-select">${exerciseOptions}</select></label>` : progressionView === "muscle" ? `<label class="exercise-select-label">MUSCLE GROUP<select id="muscle-trend-select">${muscleOptions}</select></label>` : ""}</div></div>${progressionChart}</article>
       <article class="fitness-insight-card fitness-insight-wide"><div class="fitness-chart-heading"><div><div class="eyebrow">CONSISTENCY</div><h4>Workouts per week</h4><p>Completed sessions across your imported history.</p></div><span class="chart-note">${summary.weeklyActivity.length > 12 ? "LATEST 12 WEEKS · MONDAY START" : "WEEK STARTS MONDAY"}</span></div>${renderWeeklyWorkoutChart(summary.weeklyActivity)}</article>
       <article class="fitness-insight-card fitness-insight-wide"><div class="fitness-chart-heading"><div><div class="eyebrow">MOVEMENT MAP</div><h4>Exercises for each muscle group</h4><p>Exercises tagged for multiple groups count in each one.</p></div></div>${renderMuscleFocusList(summary.muscles)}</article>
     </div>`;
@@ -327,14 +338,31 @@ function renderWeeklyMuscleChart(muscles) {
   return `<div class="weekly-muscle-list">${muscles.map((muscle) => `<div class="weekly-muscle-row"><span>${escapeHtml(muscle.name)}</span><span class="progress-track"><i style="width:${(muscle.setsPerWeek / maximum) * 100}%"></i></span><strong>${muscle.setsPerWeek.toFixed(1)}</strong></div>`).join("")}</div><div class="trend-caption"><span>Average completed sets per week</span><span>FULL DATE RANGE</span></div>`;
 }
 function renderWeeklyMuscleTimeline(muscles, weeklyActivity) {
-  const weeks = weeklyActivity;
-  if (!muscles.length || !weeks.length) return "";
-  const maximum = Math.max(1, ...weeks.flatMap((week) => muscles.map((muscle) => week.muscleSets[muscle.id] || 0)));
-  return `<div class="weekly-timeline"><div class="weekly-timeline-heading"><strong>ACTUAL SETS EACH WEEK</strong><span>FULL DATE RANGE · ${weeks.length} WEEKS</span></div><div class="weekly-timeline-scroll"><table class="weekly-timeline-table"><thead><tr><th scope="col">MUSCLE GROUP</th>${weeks.map((week) => `<th scope="col" title="Week starting ${escapeHtml(formatDate(week.weekStart))}">${escapeHtml(formatDate(week.weekStart, { month: "short", day: "numeric" }))}</th>`).join("")}</tr></thead><tbody>${muscles.map((muscle) => `<tr><th scope="row">${escapeHtml(muscle.name)}</th>${weeks.map((week) => {
-    const sets = week.muscleSets[muscle.id] || 0;
-    const strength = sets ? (0.18 + (sets / maximum) * 0.62).toFixed(2) : "0";
-    return `<td class="${sets ? "has-sets" : ""}" style="--cell-strength:${strength}" title="${escapeHtml(muscle.name)}: ${sets} ${sets === 1 ? "set" : "sets"} · week of ${escapeHtml(formatDate(week.weekStart))}">${sets}</td>`;
-  }).join("")}</tr>`).join("")}</tbody></table></div></div>`;
+  if (!muscles.length || !weeklyActivity.length) return "";
+  const width = 960;
+  const height = 290;
+  const padding = { top: 20, right: 20, bottom: 42, left: 48 };
+  const maximum = Math.max(1, ...weeklyActivity.flatMap((week) => muscles.map((muscle) => week.muscleSets[muscle.id] || 0)));
+  const x = (index) => weeklyActivity.length === 1
+    ? padding.left + (width - padding.left - padding.right) / 2
+    : padding.left + (index / (weeklyActivity.length - 1)) * (width - padding.left - padding.right);
+  const y = (sets) => padding.top + ((maximum - sets) / maximum) * (height - padding.top - padding.bottom);
+  const ticks = [...new Set([0, Math.ceil(maximum / 2), maximum])];
+  const labelIndexes = [...new Set([
+    0,
+    Math.round((weeklyActivity.length - 1) / 3),
+    Math.round(((weeklyActivity.length - 1) * 2) / 3),
+    weeklyActivity.length - 1,
+  ])];
+  return `<svg class="fitness-chart-svg weekly-timeline-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Weekly completed set counts over time for each muscle group">
+    ${ticks.map((tick) => `<g><line x1="${padding.left}" x2="${width - padding.right}" y1="${y(tick)}" y2="${y(tick)}" class="chart-grid-line"></line><text x="${padding.left - 9}" y="${y(tick) + 3}" text-anchor="end" class="chart-axis-label">${tick}</text></g>`).join("")}
+    ${muscles.map((muscle, seriesIndex) => {
+      const values = weeklyActivity.map((week) => week.muscleSets[muscle.id] || 0);
+      const points = values.map((sets, index) => `${x(index)},${y(sets)}`).join(" ");
+      return `<g class="chart-series" data-chart-series="${seriesIndex}"><polyline points="${points}" class="muscle-timeline-line"></polyline>${values.map((sets, index) => `<circle cx="${x(index)}" cy="${y(sets)}" r="2.5" class="muscle-timeline-point"><title>${escapeHtml(muscle.name)} · ${sets} sets · week of ${escapeHtml(formatDate(weeklyActivity[index].weekStart))}</title></circle>`).join("")}</g>`;
+    }).join("")}
+    ${labelIndexes.map((index) => `<text x="${x(index)}" y="${height - 12}" text-anchor="${index === 0 ? "start" : index === weeklyActivity.length - 1 ? "end" : "middle"}" class="chart-axis-label">${escapeHtml(formatDate(weeklyActivity[index].weekStart, { month: "short", day: "numeric", year: "2-digit" }))}</text>`).join("")}
+  </svg><div class="weekly-timeline-legend">${muscles.map((muscle, index) => `<span class="chart-series-label" data-chart-series="${index}"><i></i>${escapeHtml(muscle.name)}</span>`).join("")}</div>`;
 }
 function renderExerciseTrendChart(exercise) {
   if (!exercise?.points.length) return `<div class="chart-empty">No working loads recorded for this exercise yet.</div>`;
@@ -364,45 +392,54 @@ function renderExerciseTrendChart(exercise) {
     <text x="${padding.left}" y="11" class="chart-axis-label">LOAD</text>
   </svg><div class="trend-caption"><span>${escapeHtml(exercise.name)} · ${points.length} workouts with a recorded load</span><span>${points[0].load} → ${points[points.length - 1].load}</span></div>`;
 }
-function renderAllProgressions(exercises) {
-  if (!exercises.length) return `<p class="chart-empty">No trained exercises found.</p>`;
-  return `<div class="progression-exercise-grid">${exercises.map(renderProgressionExerciseCard).join("")}</div>`;
-}
-function renderProgressionsByMuscle(muscles, exercises) {
-  if (!exercises.length) return `<p class="chart-empty">No trained exercises found.</p>`;
-  const exerciseById = new Map(exercises.map((exercise) => [exercise.id, exercise]));
-  return `<div class="progression-group-list">${muscles.map((muscle) => {
-    const groupExercises = muscle.exercises.map((entry) => exerciseById.get(entry.id)).filter(Boolean);
-    if (!groupExercises.length) return "";
-    return `<section class="progression-group"><div class="progression-group-heading"><h5>${escapeHtml(muscle.name)}</h5><span>${muscle.setsPerWeek.toFixed(1)} sets / wk</span></div><div class="progression-exercise-grid">${groupExercises.map(renderProgressionExerciseCard).join("")}</div></section>`;
-  }).join("")}</div>`;
-}
-function renderProgressionExerciseCard(exercise) {
-  const points = exercise.points;
-  const trend = points.length
-    ? `<svg class="exercise-sparkline" viewBox="0 0 280 72" role="img" aria-label="${escapeHtml(exercise.name)} load trend">${renderSparkline(points)}</svg>`
-    : `<div class="exercise-sparkline-empty">No load recorded</div>`;
-  const loadRange = points.length ? `${points[0].load} → ${points[points.length - 1].load}` : "—";
-  const dateRange = points.length
-    ? `${formatDate(points[0].date, { month: "short", day: "numeric" })} – ${formatDate(points[points.length - 1].date, { month: "short", day: "numeric" })}`
-    : `${exercise.workoutCount} ${exercise.workoutCount === 1 ? "workout" : "workouts"}`;
-  return `<article class="progression-exercise-card"><div class="progression-exercise-heading"><strong>${escapeHtml(exercise.name)}</strong><span>${exercise.workoutCount} ${exercise.workoutCount === 1 ? "workout" : "workouts"}</span></div>${trend}<div class="progression-exercise-foot"><span>${dateRange}</span><strong>${loadRange}</strong></div></article>`;
-}
-function renderSparkline(points) {
-  const width = 280;
-  const height = 72;
-  const padding = 6;
-  const values = points.map((point) => point.load);
-  let minimum = Math.min(...values);
-  let maximum = Math.max(...values);
+function renderMultiExerciseTrendChart(exercises) {
+  const series = exercises.map((exercise) => {
+    const points = exercise.points.filter((point) => point.load > 0);
+    if (!points.length) return null;
+    const initialLoad = points[0].load;
+    return {
+      name: exercise.name,
+      points: points.map((point) => ({
+        ...point,
+        change: ((point.load - initialLoad) / initialLoad) * 100,
+        timestamp: new Date(`${point.date}T12:00:00`).getTime(),
+      })),
+    };
+  }).filter(Boolean);
+  if (!series.length) return `<div class="chart-empty">No recorded loads for these trained exercises.</div>`;
+
+  const width = 960;
+  const height = 290;
+  const padding = { top: 20, right: 20, bottom: 42, left: 54 };
+  const timestamps = series.flatMap((item) => item.points.map((point) => point.timestamp));
+  const firstTime = Math.min(...timestamps);
+  const lastTime = Math.max(...timestamps);
+  const dates = series.flatMap((item) => item.points.map((point) => point.date)).sort();
+  const values = series.flatMap((item) => item.points.map((point) => point.change));
+  let minimum = Math.min(0, ...values);
+  let maximum = Math.max(0, ...values);
   if (minimum === maximum) {
-    minimum = Math.max(0, minimum - 1);
-    maximum += 1;
+    minimum = -5;
+    maximum = 5;
+  } else {
+    const margin = (maximum - minimum) * 0.08;
+    minimum -= margin;
+    maximum += margin;
   }
-  const x = (index) => points.length === 1 ? width / 2 : padding + (index / (points.length - 1)) * (width - padding * 2);
-  const y = (value) => padding + ((maximum - value) / (maximum - minimum)) * (height - padding * 2);
-  const line = points.map((point, index) => `${x(index)},${y(point.load)}`).join(" ");
-  return `<polyline points="${line}" class="chart-trend-line"></polyline>${points.map((point, index) => `<circle cx="${x(index)}" cy="${y(point.load)}" r="2.5" class="chart-trend-point"><title>${escapeHtml(formatDate(point.date, { month: "short", day: "numeric", year: "numeric" }))}: ${point.load}</title></circle>`).join("")}`;
+  const x = (timestamp) => firstTime === lastTime
+    ? padding.left + (width - padding.left - padding.right) / 2
+    : padding.left + ((timestamp - firstTime) / (lastTime - firstTime)) * (width - padding.left - padding.right);
+  const y = (value) => padding.top + ((maximum - value) / (maximum - minimum)) * (height - padding.top - padding.bottom);
+  const ticks = [...new Set([minimum, (minimum + maximum) / 2, maximum].map((tick) => Math.round(tick)))];
+  const dateLabels = [...new Set([dates[0], dates[Math.floor((dates.length - 1) / 2)], dates[dates.length - 1]])];
+  return `<svg class="fitness-chart-svg progression-line-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Exercise load change compared with each exercise's first recorded load">
+    ${ticks.map((tick) => `<g><line x1="${padding.left}" x2="${width - padding.right}" y1="${y(tick)}" y2="${y(tick)}" class="chart-grid-line"></line><text x="${padding.left - 9}" y="${y(tick) + 3}" text-anchor="end" class="chart-axis-label">${tick > 0 ? "+" : ""}${tick}%</text></g>`).join("")}
+    ${series.map((item, seriesIndex) => {
+      const points = item.points.map((point) => `${x(point.timestamp)},${y(point.change)}`).join(" ");
+      return `<g class="chart-series" data-chart-series="${seriesIndex}"><polyline points="${points}" class="exercise-progression-line"><title>${escapeHtml(item.name)}</title></polyline>${item.points.map((point) => `<circle cx="${x(point.timestamp)}" cy="${y(point.change)}" r="2.5" class="exercise-progression-point"><title>${escapeHtml(item.name)} · ${escapeHtml(formatDate(point.date))}: ${point.change > 0 ? "+" : ""}${point.change.toFixed(1)}%</title></circle>`).join("")}</g>`;
+    }).join("")}
+    ${dateLabels.map((date, index) => `<text x="${x(new Date(`${date}T12:00:00`).getTime())}" y="${height - 12}" text-anchor="${index === 0 ? "start" : index === dateLabels.length - 1 ? "end" : "middle"}" class="chart-axis-label">${escapeHtml(formatDate(date, { month: "short", day: "numeric", year: "2-digit" }))}</text>`).join("")}
+  </svg><div class="progression-chart-legend">${series.map((item, index) => `<span class="chart-series-label" data-chart-series="${index}"><i></i>${escapeHtml(item.name)}</span>`).join("")}</div><div class="trend-caption"><span>${series.length} exercises with recorded loads</span><span>CHANGE FROM EACH EXERCISE'S FIRST LOAD</span></div>`;
 }
 function renderWeeklyWorkoutChart(activity) {
   if (!activity.length) return `<p class="chart-empty">No completed workouts to chart yet.</p>`;
@@ -430,8 +467,34 @@ function renderMuscleFocusList(muscles) {
   if (!muscles.length) return `<p class="chart-empty">No exercise focus data found in this export.</p>`;
   return `<div class="muscle-focus-grid">${muscles.map((muscle) => `<section class="muscle-focus-card"><div class="muscle-focus-head"><strong>${escapeHtml(muscle.name)}</strong><span>${muscle.setsPerWeek.toFixed(1)} sets / wk</span></div><ul>${muscle.exercises.map((exercise) => `<li><span>${escapeHtml(exercise.name)}</span><small>${exercise.workouts} ${exercise.workouts === 1 ? "workout" : "workouts"}</small></li>`).join("")}</ul></section>`).join("")}</div>`;
 }
+function highlightChartSeries(card, activeIndex = null) {
+  $$("[data-chart-series]", card).forEach((series) => {
+    const active = activeIndex !== null && series.dataset.chartSeries === activeIndex;
+    series.classList.toggle("chart-series-active", active);
+    series.classList.toggle("chart-series-muted", activeIndex !== null && !active);
+  });
+}
 function bindFitnessActions() {
   const content = $("#fitness-content");
+  if (content.dataset.chartHoverBound !== "true") {
+    content.dataset.chartHoverBound = "true";
+    content.addEventListener("pointerover", (event) => {
+      const target = event.target instanceof Element ? event.target.closest("[data-chart-series]") : null;
+      const card = target?.closest(".fitness-insight-card");
+      if (target && card) highlightChartSeries(card, target.dataset.chartSeries);
+    });
+    content.addEventListener("pointerout", (event) => {
+      const target = event.target instanceof Element ? event.target.closest("[data-chart-series]") : null;
+      const card = target?.closest(".fitness-insight-card");
+      if (!target || !card) return;
+      const related = event.relatedTarget instanceof Element ? event.relatedTarget.closest("[data-chart-series]") : null;
+      if (related?.closest(".fitness-insight-card") === card) {
+        highlightChartSeries(card, related.dataset.chartSeries);
+      } else {
+        highlightChartSeries(card);
+      }
+    });
+  }
   const importButton = $("[data-open-fitnotes]", content);
   const fileInput = $("#fitnotes-file", content);
   if (importButton && fileInput) importButton.addEventListener("click", () => fileInput.click());
@@ -485,6 +548,11 @@ function bindFitnessActions() {
   const exerciseSelect = $("#exercise-trend-select", content);
   if (exerciseSelect) exerciseSelect.addEventListener("change", () => {
     selectedExerciseId = exerciseSelect.value;
+    renderFitness();
+  });
+  const muscleSelect = $("#muscle-trend-select", content);
+  if (muscleSelect) muscleSelect.addEventListener("change", () => {
+    selectedMuscleId = muscleSelect.value;
     renderFitness();
   });
   $$("[data-progression-view]", content).forEach((button) => button.addEventListener("click", () => {

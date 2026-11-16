@@ -212,15 +212,20 @@ a { color: inherit; }
 .weekly-muscle-list { display: grid; gap: 12px; }
 .weekly-muscle-row { display: grid; grid-template-columns: 90px minmax(30px, 1fr) 35px; align-items: center; gap: 8px; color: #c2c2c2; font-size: 8px; }
 .weekly-muscle-row strong { color: #d5d5d5; font-size: 8px; text-align: right; }
-.weekly-timeline { margin-top: 15px; border-top: 1px solid #292929; padding-top: 12px; }
-.weekly-timeline-heading { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; color: #858585; font-size: 7px; letter-spacing: .08em; }
-.weekly-timeline-heading strong { color: #bbb; }
-.weekly-timeline-scroll { overflow-x: auto; }
-.weekly-timeline-table { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 2px; color: #aaa; font-size: 7px; font-variant-numeric: tabular-nums; }
-.weekly-timeline-table th { min-width: 34px; padding: 5px 2px; color: #777; font-weight: 600; text-align: center; white-space: nowrap; }
-.weekly-timeline-table th:first-child { position: sticky; left: 0; z-index: 1; min-width: 92px; background: #101010; text-align: left; }
-.weekly-timeline-table td { min-width: 34px; border-radius: 4px; background: rgba(215, 215, 215, var(--cell-strength, 0)); color: #eee; padding: 5px 2px; text-align: center; }
-.weekly-timeline-table td:not(.has-sets) { color: #555; }
+.weekly-timeline { min-width: 0; }
+.weekly-timeline-chart { min-height: 200px; }
+.chart-series { opacity: 1; transition: opacity .15s ease; }
+.chart-series-muted, .chart-series-label.chart-series-muted { opacity: .14; }
+.muscle-timeline-line, .exercise-progression-line { fill: none; stroke: #bdbdbd; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
+.muscle-timeline-point, .exercise-progression-point { fill: #101010; stroke: #bdbdbd; stroke-width: 1.7; }
+.chart-series-active .muscle-timeline-line, .chart-series-active .exercise-progression-line { stroke: #fff; stroke-width: 3; }
+.chart-series-active .muscle-timeline-point, .chart-series-active .exercise-progression-point { stroke: #fff; }
+.weekly-timeline-legend, .progression-chart-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 7px; }
+.weekly-timeline-legend span, .progression-chart-legend span { display: inline-flex; align-items: center; gap: 5px; color: #999; font-size: 8px; transition: opacity .15s ease, color .15s ease; }
+.weekly-timeline-legend i, .progression-chart-legend i { width: 12px; height: 2px; border-radius: 2px; background: #bdbdbd; }
+.weekly-timeline-legend .chart-series-active, .progression-chart-legend .chart-series-active { color: #fff; }
+.weekly-timeline-legend .chart-series-active i, .progression-chart-legend .chart-series-active i { background: #fff; }
+.progression-chart-legend { max-height: 100px; overflow-y: auto; padding: 2px; }
 .fitness-chart-svg { display: block; width: 100%; height: auto; overflow: visible; }
 .chart-grid-line { stroke: #2b2b2b; stroke-width: 1; }
 .chart-axis-label { fill: #777; font-family: inherit; font-size: 9px; }
@@ -234,20 +239,6 @@ a { color: inherit; }
 .progression-mode-switch { display: inline-flex; gap: 2px; border: 1px solid #303030; border-radius: 8px; background: #0c0c0c; padding: 3px; }
 .progression-mode-switch button { border: 0; border-radius: 6px; background: transparent; padding: 7px 9px; color: #888; font-size: 7px; font-weight: 800; letter-spacing: .06em; cursor: pointer; white-space: nowrap; }
 .progression-mode-switch button:hover, .progression-mode-switch button.active { background: #292929; color: #eee; }
-.progression-exercise-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(205px, 1fr)); gap: 7px; }
-.progression-group-list { display: grid; gap: 16px; }
-.progression-group { display: grid; gap: 8px; }
-.progression-group-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; border-bottom: 1px solid #292929; padding-bottom: 7px; }
-.progression-group-heading h5 { color: #dedede; font-size: 10px; }
-.progression-group-heading span { color: #858585; font-size: 8px; }
-.progression-exercise-card { min-width: 0; border: 1px solid #2b2b2b; border-radius: 9px; background: #0c0c0c; padding: 9px; }
-.progression-exercise-heading, .progression-exercise-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.progression-exercise-heading strong { overflow: hidden; color: #ddd; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
-.progression-exercise-heading span, .progression-exercise-foot { color: #777; font-size: 7px; }
-.progression-exercise-heading span { flex: 0 0 auto; }
-.exercise-sparkline { display: block; width: 100%; height: auto; margin: 7px 0; }
-.exercise-sparkline-empty { display: grid; height: 38px; align-content: center; margin: 7px 0; color: #777; font-size: 8px; text-align: center; }
-.progression-exercise-foot strong { color: #aaa; font-size: 7px; font-weight: 600; }
 .chart-empty { display: grid; min-height: 130px; align-content: center; color: #858585; font-size: 9px; text-align: center; }
 .muscle-focus-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
 .muscle-focus-card { min-width: 0; border: 1px solid #292929; border-radius: 9px; padding: 10px; }
@@ -401,7 +392,9 @@ a { color: inherit; }
   .fitness-insight-wide { grid-column: auto; }
   .fitness-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fitness-chart-heading { flex-wrap: wrap; }
-  .exercise-select-label { flex-basis: 100%; }
+  .progression-tools { width: 100%; justify-items: start; }
+  .progression-mode-switch { max-width: 100%; overflow-x: auto; }
+  .exercise-select-label { width: 100%; flex-basis: auto; }
   .voyage-title-row { align-items: flex-start; flex-direction: column; padding-top: 34px; }
   .event-controls { grid-template-columns: minmax(0, 1fr) auto; }
   .category-switch { grid-column: 1 / -1; }
