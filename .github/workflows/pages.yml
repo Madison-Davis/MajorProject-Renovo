@@ -32,7 +32,7 @@ jobs:
       - name: Prepare site directory
         run: |
           mkdir -p _site
-          cp index.html app.js styles.css _site/
+          cp index.html app.js fitnotes-data.js styles.css _site/
           cp _theme-source/styles.css _site/compaulo-theme.css
 
       - name: Upload site files
